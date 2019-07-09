@@ -1,0 +1,145 @@
+@import url('https://fonts.googleapis.com/css?family=Open+Sans&display=swap');
+
+body {
+    font-family: 'Open Sans', sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100vh;
+}
+
+body,ul,li,p {
+    margin: 0;
+    padding: 0;
+}
+
+a {
+    outline: none;
+    border: none;
+}
+
+
+header {
+    background-color: #140f23;
+}
+
+header > ul {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    height: 80px;
+}
+
+header > ul > li {
+    list-style: none;
+}
+
+header > ul > li > a {
+    color: white;
+    text-decoration: none;
+    font-size: 22px;
+    letter-spacing: 0.5px;
+}
+
+header > ul > li > a.active {
+    font-weight: bold;
+}
+
+header > ul > li > a:hover {
+    text-decoration: underline;
+    color: white;
+}
+
+main {
+    flex-grow: 1;
+}
+
+section {
+    display: none;
+    opacity: 0;
+    transition: opacity linear 400ms;
+    height: 100%;
+    justify-content: center;
+    align-items: center;
+}
+
+section.active {
+    display: flex;
+}
+
+section.active.visible {
+    opacity: 1;
+}
+
+#secret {
+    display: block;
+    margin: 10px auto 0;
+    width: 310px;
+    height: 20px;
+    font-size: 18px;
+    border-radius: 15px;
+    padding: 5px 6px;
+    border: none;
+    outline: none;
+    text-align: center;
+}
+
+#files {
+    height: 50px;
+    width: 400px;
+    box-sizing: border-box;
+    font-size: 20px;
+    border-radius: 25px;
+    border: 2px solid grey;
+    margin-top: 20px;
+    outline: none;
+    padding: 0 20px;
+    -webkit-appearance: none;
+}
+
+#from-file {
+    border: 4px solid transparent;
+    transition: border 200ms ease,
+                opacity linear 400ms;
+    color: black;
+    font-size: 32px;
+}
+
+#from-file.file-over {
+    border: 4px solid #140f23;
+    background: #c2ceef;
+}
+
+#otp {
+    text-align: center;
+    letter-spacing: 3px;
+    font-size: 40px;
+    margin: 20px auto 15px;
+    color: mediumvioletred;
+    border: 2px solid #000000b8;
+    border-radius: 30px;
+    width: 190px;
+}
+
+#err {
+    color: red;
+    text-align: center;
+    font-size: 26px;
+}
+
+footer {
+    background: #140f23;
+    color: white;
+    text-align: center;
+    font-size: 15px;
+    padding: 8px 0;
+}
+
+footer a {
+    color: white;
+    text-decoration: none;
+}
+
+footer a:hover {
+    color: lightskyblue;
+}

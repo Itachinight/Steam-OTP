@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en-EN">
+<head>
+    <meta charset="UTF-8">
+    <title>Steam OTP</title>
+</head>
+<body>
+<header>
+    <ul id="nav">
+        <li>
+            <a href="#from-secret">Get OTP From SharedSecret</a>
+        </li>
+        <li>
+            <a class="active" href="#from-file">Get OTP From File</a>
+        </li>
+        <li>
+            <a href="#from-config-dir">Get OTP From ConfigDir</a>
+        </li>
+    </ul>
+</header>
+
+<main>
+    <section id="from-secret">
+        <label>
+            Submit Your Shared Secret String To Get OTP:
+            <input type="text" id="secret">
+        </label>
+    </section>
+
+    <section id="from-file" class="active visible">
+        Drop db/maFile To Get Your OTP
+    </section>
+
+    <section id="from-config-dir">
+        <label>
+            <select name="" id="files">
+                <option disabled selected>Select Your Account</option>
+            </select>
+        </label>
+    </section>
+</main>
+
+<div id="err">
+    <p></p>
+</div>
+
+<div id="otp">
+    <p>00000</p>
+</div>
+
+<footer>dev by <a href="https://t.me/ItachiNight" target="_blank">@ItachiNight</a></footer>
+<!-- You can also require other files to run in this process -->
+<script src="./renderer.js"></script>
+<link rel="stylesheet" href="./css/style.css">
+</body>
+</html>
