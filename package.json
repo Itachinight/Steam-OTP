@@ -18,6 +18,7 @@
     "electron": "^5.0.6"
   },
   "dependencies": {
-    "jquery": "^3.4.1"
+    "jquery": "^3.4.1",
+    "node-fetch": "^2.6.0"
   }
 }

@@ -1,13 +1,16 @@
-const app = require('./2fa.js');
+const app = require('./router');
+const steamTimeAligner = require('./steamTimeAligner');
 const pathToConfig = 'config';
 window.$ = window.jQuery = require('jquery');
 
 $(() => {
     let $filesSelector = $('#files');
-    let $opt = $('#otp p');
+    let $otp = $('#otp p');
     let $err = $('#err p');
     let $secret = $('#secret');
     let $drop = $('#from-file');
+    let $secretStorage = $('#shared-secret');
+    let $progress = $('#progress > div');
 
     app.getConfigFiles(pathToConfig).then(values => values.forEach(value => {
         $filesSelector.append(`<option value="${value}">${value}</option>`);
@@ -16,6 +19,14 @@ $(() => {
     $filesSelector.on('change', function() {
         let file = $(this).val();
         app.get2faFromFile(pathToConfig, file).then(otp => renderOtp(otp))
+    });
+
+    $otp.on('dblclick', () => {
+        let $temp = $('<input>');
+        $('body').append($temp);
+        $temp.val($otp.text()).select();
+        document.execCommand("copy");
+        $temp.remove();
     });
 
     $drop
@@ -44,12 +55,7 @@ $(() => {
 
     $secret.on('keydown', function (event) {
         if (event.keyCode === 13) {
-            try {
-                let otp = app.get2FaFormSecret( $(this).val() );
-                renderOtp(otp);
-            } catch (err) {
-                renderError(err);
-            }
+            app.get2FaFormSecret( $(this).val() ).then(otp => renderOtp(otp), err => renderError(err));
         }
     });
 
@@ -57,12 +63,18 @@ $(() => {
         app.get2faFromFile(path, file).then(otp => renderOtp(otp));
 
     }
-    function renderOtp(otp) {
-        $opt.fadeOut(250, () => $opt.text(otp.code)).fadeIn(250);
+
+    function renderOtp(otp = false) {
+        $secretStorage.val(otp.secret);
+        crossFade($otp, otp.code);
     }
 
     function renderError(err) {
-        $err.text(err.message);
+        crossFade($err, err.message);
+    }
+
+    function crossFade($elem, text, duration = 200) {
+        $elem.fadeOut(duration, () => $elem.text(text)).fadeIn(duration);
     }
 
     function toggleActiveMenu(elem) {
@@ -77,4 +89,21 @@ $(() => {
         $elem.addClass('active');
         setTimeout(() => $elem.addClass('visible'), 20);
     }
+
+    !async function updateOtp() {
+        let offset = await steamTimeAligner.getOffset();
+        setInterval(() => {
+            let remainingSecs = Math.round(Date.now() / 1000);
+            let count = (remainingSecs + offset) % 30;
+            let secret = $secretStorage.val();
+
+            $progress.css('width', `${Math.round(100 / 29 * count)}%`);
+            console.log(count);
+
+            if (count === 0 && secret !== '') {
+                app.get2FaFormSecret(secret).then(otp => renderOtp(otp))
+            }
+        }, 1000);
+    }()
+
 });

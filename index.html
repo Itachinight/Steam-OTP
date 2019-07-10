@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <title>Steam OTP</title>
+    <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
 <header>
     <ul id="nav">
         <li>
-            <a href="#from-secret">Get OTP From SharedSecret</a>
+            <a class="active" href="#from-secret">Get OTP From SharedSecret</a>
         </li>
         <li>
-            <a class="active" href="#from-file">Get OTP From File</a>
+            <a href="#from-file">Get OTP From File</a>
         </li>
         <li>
             <a href="#from-config-dir">Get OTP From ConfigDir</a>
@@ -20,15 +21,15 @@
 </header>
 
 <main>
-    <section id="from-secret">
+    <section id="from-secret" class="active visible">
         <label>
-            Submit Your Shared Secret String To Get OTP:
+            Submit Your Shared Secret String To Get OTP
             <input type="text" id="secret">
         </label>
     </section>
 
-    <section id="from-file" class="active visible">
-        Drop db/maFile To Get Your OTP
+    <section id="from-file">
+        Drop db/maFile Here
     </section>
 
     <section id="from-config-dir">
@@ -45,12 +46,16 @@
 </div>
 
 <div id="otp">
+    <input id="shared-secret" type="hidden" value="">
     <p>00000</p>
+</div>
+
+<div id="progress">
+    <div></div>
 </div>
 
 <footer>dev by <a href="https://t.me/ItachiNight" target="_blank">@ItachiNight</a></footer>
 <!-- You can also require other files to run in this process -->
 <script src="./renderer.js"></script>
-<link rel="stylesheet" href="./css/style.css">
 </body>
 </html>

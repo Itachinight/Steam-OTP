@@ -127,6 +127,22 @@ section.active.visible {
     font-size: 26px;
 }
 
+#progress {
+    height: 16px;
+    border: 1px solid;
+    border-radius: 5px;
+    width: 500px;
+    margin: 0 auto 20px;
+}
+
+#progress > div {
+    background: red;
+    width: 0;
+    height: 100%;
+    border-radius: 5px;
+    transition: width 800ms;
+}
+
 footer {
     background: #140f23;
     color: white;
