@@ -1,59 +1,85 @@
 const fs = require('fs');
+const util = require('util');
 const steamOtp = require('./steamOtp');
+const readFile = util.promisify(fs.readFile);
+const readDir = util.promisify(fs.readdir);
+const writeFile = util.promisify(fs.writeFile);
 
-async function getLoginAnd2fa(dirPath, file) {
-    if (file.endsWith('.db')) {
-        file = file.replace('.db', '');
-        let secret = await getSharedSecretFromDb(dirPath, file);
-        return {
-            secret,
-            name : file,
-            login : await getLoginFromJson(dirPath, file),
-            code : await steamOtp.getAuthCode(secret),
-        }
-    }
-}
-
-function getSharedSecretFromDb(dirPath, file) {
-    return new Promise((resolve, reject) => {
-        fs.readFile(`${dirPath}/${file}.db`, 'UTF-8', (err, content) => {
-            if (err) reject(err);
-            resolve(JSON.parse(content)._MobileAuthenticator.shared_secret);
-        })
-    })
-}
-
-function getLoginFromJson(dirPath, file) {
-    return new Promise((resolve, reject) => {
-        fs.readFile(`${dirPath}/${file}.json`, 'UTF-8', (err, content) => {
-            if (err) reject(err);
-            resolve(JSON.parse(content).SteamLogin);
-        })
-    })
-}
-
-function readAllFiles(path) {
-    return new Promise((resolve, reject) => {
-        fs.readdir(path, (err, files) => {
-            if (err) reject(err);
-            else resolve(files.filter(file => file.endsWith('.db')));
-        })
-    })
-}
-
-// async function get2faFromASF(dirPath) {
-//     const files = await readAllFiles(dirPath);
-//     return Promise.all(files.map(async file => await getLoginAnd2fa(dirPath, file)));
-// }
-
-exports.get2faFromFile = async (dirPath, file) => await getLoginAnd2fa(dirPath, file);
-
-exports.get2FaFormSecret = async secret => {
+async function getDataFromDb(dirPath, file) {
+    let fileContent = await readFile(`${dirPath}/${file}`, 'UTF-8');
+    let {shared_secret, identity_secret, device_id} = JSON.parse(fileContent)._MobileAuthenticator;
     return {
-        secret,
-        code: await steamOtp.getAuthCode(secret.trim())
+        account_name: await getLoginFromJson(dirPath, file),
+        device_id,
+        identity_secret,
+        shared_secret,
+    };
+}
+
+async function getDataFromMafile(dirPath, file) {
+    let fileContent = await readFile(`${dirPath}/${file}`, 'UTF-8');
+    let {account_name, shared_secret, identity_secret, device_id} = JSON.parse(fileContent);
+    return {
+        account_name,
+        device_id,
+        identity_secret,
+        shared_secret,
+    };
+}
+
+async function getLoginFromJson(dirPath, file) {
+    file = file.split('.', 2)[0];
+    try {
+        let fileContent = await readFile(`${dirPath}/${file}.json`, 'UTF-8');
+        return JSON.parse(fileContent).SteamLogin;
+    } catch {
+        return '';
+    }
+}
+
+async function getDataFromFile(dirPath, file) {
+    file = file.toLowerCase();
+    let accData;
+
+    if (file.endsWith('.db')) {
+        accData = await getDataFromDb(dirPath, file);
+    } else if (file.endsWith('.mafile')) {
+        accData = await getDataFromMafile(dirPath, file);
     }
 
+    if (!accData) {
+        throw new Error("File doesn't contain shared secret");
+    }
+
+    return accData;
+}
+
+exports.get2faFromFile = async (dirPath, file) => {
+    let accData = await getDataFromFile(dirPath, file);
+    return Object.assign(accData, {
+        code: await steamOtp.getAuthCode(accData.shared_secret)
+    });
 };
 
-exports.getConfigFiles = async dirPath => await readAllFiles(dirPath);
+exports.get2FaFormSecret = async shared_secret => {
+    return {
+        shared_secret,
+        code: await steamOtp.getAuthCode(shared_secret.trim())
+    }
+};
+
+exports.saveToConfig = async (dirPath, file) => {
+    let accData = await getDataFromFile(dirPath, file);
+    let options = {
+        encoding: 'UTF-8',
+        flag: 'wx',
+    };
+
+    file = file.split('.', 2)[0];
+    return writeFile(`config/${file}.maFile`, JSON.stringify(accData, null, 2), options);
+};
+
+exports.getConfigFiles = async path => {
+    let files = await readDir(path);
+    return files.filter(file => file.toLowerCase().endsWith('.db') || file.toLowerCase().endsWith('.mafile'));
+};

@@ -1,4 +1,4 @@
-bufferizeSecret = secret => {
+function bufferizeSecret(secret) {
     if (typeof secret === 'string') {
         if (secret.match(/[0-9a-f]{40}/i)) {
             return Buffer.from(secret, 'hex');
@@ -6,9 +6,9 @@ bufferizeSecret = secret => {
             return Buffer.from(secret, 'base64');
         } throw new Error('Wrong Secret Given');
     } throw new Error('Wrong Secret Given');
-};
+}
 
-bufferToOTP = fullcode =>{
+function bufferToOTP(fullcode) {
     const chars = '23456789BCDFGHJKMNPQRTVWXY';
     let otp = '';
 
@@ -18,9 +18,9 @@ bufferToOTP = fullcode =>{
     }
 
     return otp;
-};
+}
 
-exports.getAuthCode = async (secret) => {
+exports.getAuthCode = async secret => {
     secret = bufferizeSecret(secret);
     const Crypto = require('crypto');
     const steamTimeAligner = require('./steamTimeAligner');

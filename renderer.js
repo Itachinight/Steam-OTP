@@ -1,9 +1,9 @@
 const app = require('./router');
-const steamTimeAligner = require('./steamTimeAligner');
+const allSettled = require('promise-settle');
 const pathToConfig = 'config';
-window.$ = window.jQuery = require('jquery');
+window.jQuery = require('jquery');
 
-$(() => {
+jQuery(($) => {
     let $filesSelector = $('#files');
     let $otp = $('#otp p');
     let $err = $('#err p');
@@ -11,10 +11,6 @@ $(() => {
     let $drop = $('#from-file');
     let $secretStorage = $('#shared-secret');
     let $progress = $('#progress > div');
-
-    app.getConfigFiles(pathToConfig).then(values => values.forEach(value => {
-        $filesSelector.append(`<option value="${value}">${value}</option>`);
-    }));
 
     $filesSelector.on('change', function() {
         let file = $(this).val();
@@ -25,7 +21,7 @@ $(() => {
         let $temp = $('<input>');
         $('body').append($temp);
         $temp.val($otp.text()).select();
-        document.execCommand("copy");
+        document.execCommand('copy');
         $temp.remove();
     });
 
@@ -42,44 +38,83 @@ $(() => {
         .on('drop', event => {
             event.preventDefault();
             $drop.removeClass('file-over');
-            for (let file of event.originalEvent.dataTransfer.files) {
-                getOtpFromFiles(file.path.replace(file.name, ''), file.name);
-            }
+            let files = Object.values(event.originalEvent.dataTransfer.files);
+            uploadFiles(files);
         });
 
-    $('#nav a').on('click' , function (event) {
+    async function uploadFiles(files) {
+        allSettled(files.map(file => {
+            return saveFileToConfig(file.path.replace(file.name, ''), file.name)
+        })).then(async results => {
+            await asyncForEach(results,async result => {
+                if (result.isRejected()) {
+                    let message = "File doesn't contain shared secret";
+                    if (message !== $err.text()) {
+                        await crossFade($err, message);
+                    }
+                }
+            });
+            updateFilesList();
+        });
+    }
+
+    async function asyncForEach(array, callback) {
+        for (let index = 0; index < array.length; index++) {
+            await callback(array[index], index, array);
+        }
+    }
+
+    function updateFilesList() {
+        $filesSelector.empty();
+        app.getConfigFiles(pathToConfig).then(values => values.forEach(value => {
+            $filesSelector.append(`<option value="${value}">${value}</option>`);
+        }));
+    }
+
+    $('#nav li').on('click' , function (event) {
         event.preventDefault();
-        toggleActiveMenu(this);
-        toggleActiveSection($(this).attr('href'));
+        let $link = $(this).children('a');
+        toggleActiveMenu($link);
+        toggleActiveSection($link.attr('href'));
     });
 
     $secret.on('keydown', function (event) {
-        if (event.keyCode === 13) {
-            app.get2FaFormSecret( $(this).val() ).then(otp => renderOtp(otp), err => renderError(err));
+        let secret = $(this).val();
+        if (event.keyCode === 13 && secret !== $secretStorage.val()) {
+            app.get2FaFormSecret(secret).then(otp => renderOtp(otp), err => renderError(err));
         }
     });
 
-    function getOtpFromFiles(path, file) {
-        app.get2faFromFile(path, file).then(otp => renderOtp(otp));
-
+    function saveFileToConfig(path, file) {
+        return new Promise((resolve, reject) => {
+            app.saveToConfig(path, file).then(
+                () => resolve(),
+                err => reject(err));
+        });
     }
 
     function renderOtp(otp = false) {
-        $secretStorage.val(otp.secret);
-        crossFade($otp, otp.code);
+        $secretStorage.val(otp.shared_secret);
+        crossFade($otp, otp.code, 200);
     }
 
     function renderError(err) {
-        crossFade($err, err.message);
+        crossFade($err, err.message,250);
     }
 
-    function crossFade($elem, text, duration = 200) {
-        $elem.fadeOut(duration, () => $elem.text(text)).fadeIn(duration);
+    function crossFade($elem, text, duration) {
+        return new Promise((resolve => {
+            $elem.fadeOut(duration, () => {
+                $elem.text(text);
+                resolve(text);
+            }).fadeIn(duration);
+        }))
+
     }
 
-    function toggleActiveMenu(elem) {
+    function toggleActiveMenu($elem) {
         $('header > ul > li > a').removeClass('active');
-        $(elem).addClass('active');
+        $elem.addClass('active');
     }
 
     function toggleActiveSection(elem) {
@@ -90,20 +125,29 @@ $(() => {
         setTimeout(() => $elem.addClass('visible'), 20);
     }
 
-    !async function updateOtp() {
-        let offset = await steamTimeAligner.getOffset();
+    (function updateOtp() {
         setInterval(() => {
-            let remainingSecs = Math.round(Date.now() / 1000);
-            let count = (remainingSecs + offset) % 30;
+            let time = Math.round(Date.now() / 1000) - 1;// Prevent Updating Too Early
+            let count = time % 30;
             let secret = $secretStorage.val();
 
             $progress.css('width', `${Math.round(100 / 29 * count)}%`);
-            console.log(count);
 
             if (count === 0 && secret !== '') {
-                app.get2FaFormSecret(secret).then(otp => renderOtp(otp))
+                (function reload() {
+                    app.get2FaFormSecret(secret).then(otp => {
+                        if (otp.code !== $otp.text()) {
+                            console.log('new');
+                            renderOtp(otp)
+                        } else {
+                            console.log('miss');
+                            setTimeout(reload, 500);
+                        }
+                    })
+                }());
             }
         }, 1000);
-    }()
+    }());
 
+    updateFilesList();
 });

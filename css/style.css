@@ -18,20 +18,23 @@ a {
     border: none;
 }
 
-
 header {
     background-color: #140f23;
 }
 
 header > ul {
     display: flex;
-    justify-content: space-around;
-    align-items: center;
     height: 80px;
 }
 
 header > ul > li {
     list-style: none;
+    flex-grow: 1;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
 }
 
 header > ul > li > a {
@@ -39,15 +42,17 @@ header > ul > li > a {
     text-decoration: none;
     font-size: 22px;
     letter-spacing: 0.5px;
+    transition: transform 600ms;
+}
+
+header > ul > li:hover > a {
+    color: white;
+    transform: scale(1.1);
 }
 
 header > ul > li > a.active {
     font-weight: bold;
-}
-
-header > ul > li > a:hover {
-    text-decoration: underline;
-    color: white;
+    transform: none;
 }
 
 main {

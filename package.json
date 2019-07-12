@@ -6,19 +6,21 @@
   "scripts": {
     "start": "electron ."
   },
-  "repository": "",
+  "repository": "https://github.com/Itachinight/Steam-OTP.git",
   "keywords": [
     "Steam",
     "OTP",
     "2FA",
     "maFile"
   ],
-  "author": "Itachinight",
+  "author": "ItachiNight",
   "devDependencies": {
-    "electron": "^5.0.6"
+    "electron": "^5.0.6",
+    "electron-packager": "^14.0.1"
   },
   "dependencies": {
     "jquery": "^3.4.1",
-    "node-fetch": "^2.6.0"
+    "node-fetch": "^2.6.0",
+    "promise-settle": "^0.3.0"
   }
 }

@@ -1,1 +1,7 @@
-{"_LoginKey":"W09IzcZ+qkxFEhM/odM","_MobileAuthenticator":{"identity_secret":"m+ZhXs5VOi6Fkvlt3FAv5qY6Tn8=","shared_secret":"oS+jO3MQTE8F/2tbRuZZa9jLNiY=","device_id":"android:65c0c85f-3e09-c85f-c85f-c85f3e09351a"}}
+{
+  "_MobileAuthenticator": {
+    "identity_secret": "m+ZhXs5VOi6Fkvlt3FAv5qY6Tn8=",
+    "shared_secret": "oS+jO3MQTE8F/2tbRuZZa9jLNiY=",
+    "device_id": "android:65c0c85f-3e09-c85f-c85f-c85f3e09351a"
+  }
+}

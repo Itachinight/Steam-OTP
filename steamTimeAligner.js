@@ -1,24 +1,28 @@
-getTime = async (url, params) => {
+async function getTime() {
     const fetch = require('node-fetch');
-    try {
-        const res = await fetch(url, params);
-        let json = await res.json();
-        return json.response.server_time;
-    } catch (error) {
-        console.log(error);
-    }
-};
-
-exports.getOffset = async () => {
-    const url = "https://api.steampowered.com/ITwoFactorService/QueryTime/v1/";
-    const params = {
+    const controller = new AbortController();
+    const signal = controller.signal;
+    let url = "https://api.steampowered.com/ITwoFactorService/QueryTime/v1/";
+    let params = {
+        signal,
         method: 'POST',
         headers: {
             'Content-Length': 0
         },
     };
-    let start = Math.floor(Date.now() / 1000);
-    let time = getTime(url, params);
 
-    return await time - start;
+    setTimeout(() => controller.abort(), 1000);
+    const res = await fetch(url, params);
+    let json = await res.json();
+    return json.response.server_time;
+}
+
+exports.getOffset = async () => {
+    try {
+        let time = await getTime();
+        return time - Math.floor(Date.now() / 1000);
+    } catch (err) {
+        console.log(err.message);
+        return 0;
+    }
 };
