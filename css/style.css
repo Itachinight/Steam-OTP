@@ -89,17 +89,41 @@ section.active.visible {
     text-align: center;
 }
 
+#from-config-dir {
+    flex-direction: column;
+}
+
 #files {
-    height: 50px;
-    width: 400px;
+    list-style: none;
+    width: 40%;
+    max-height: 250px;
+    text-align: center;
     box-sizing: border-box;
     font-size: 20px;
-    border-radius: 25px;
     border: 2px solid grey;
-    margin-top: 20px;
+    background: white;
+    margin: 20px 0 0;
     outline: none;
-    padding: 0 20px;
+    padding: 0;
     -webkit-appearance: none;
+}
+
+#files > .mCSB_scrollTools {
+    margin: 5px 0;
+}
+
+#files li {
+    padding: 3px 0;
+    cursor: pointer;
+}
+
+#files li:hover {
+    background: lightblue;
+}
+
+#files li.active-file {
+    background: lightskyblue;
+    pointer-events: none;
 }
 
 #from-file {
@@ -145,7 +169,7 @@ section.active.visible {
     width: 0;
     height: 100%;
     border-radius: 5px;
-    transition: width 800ms;
+    transition: width 500ms;
 }
 
 footer {

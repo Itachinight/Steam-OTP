@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Steam OTP</title>
     <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/jquery.mCustomScrollbar.css">
 </head>
 <body>
 <header>
@@ -33,12 +34,10 @@
     </section>
 
     <section id="from-config-dir">
-        <label>
-            <p>Select Your Account</p>
-            <select name="" id="files">
+        <p>Select Your Account</p>
+        <ul id="files">
 
-            </select>
-        </label>
+        </ul>
     </section>
 </main>
 
@@ -48,7 +47,7 @@
 
 <div id="otp">
     <input id="shared-secret" type="hidden" value="">
-    <p>00000</p>
+    <p>&nbsp</p>
 </div>
 
 <div id="progress">

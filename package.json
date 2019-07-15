@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "jquery": "^3.4.1",
+    "malihu-custom-scrollbar-plugin": "^3.1.5",
     "node-fetch": "^2.6.0",
     "promise-settle": "^0.3.0"
   }

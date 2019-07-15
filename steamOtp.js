@@ -1,41 +1,53 @@
-function bufferizeSecret(secret) {
-    if (typeof secret === 'string') {
-        if (secret.match(/[0-9a-f]{40}/i)) {
-            return Buffer.from(secret, 'hex');
-        } else if (secret.length === 28) {
-            return Buffer.from(secret, 'base64');
-        } throw new Error('Wrong Secret Given');
-    } throw new Error('Wrong Secret Given');
-}
+module.exports.SteamOtp = class SteamOtp {
 
-function bufferToOTP(fullcode) {
-    const chars = '23456789BCDFGHJKMNPQRTVWXY';
-    let otp = '';
-
-    for (let i = 0; i < 5; i++) {
-        otp += chars.charAt(fullcode % chars.length);
-        fullcode /= chars.length;
+    constructor() {
+        this.steamTimeOffset = 0;
+        SteamOtp.alignTime().then(offset => this.steamTimeOffset = offset);
     }
 
-    return otp;
-}
+    static async alignTime() {
+        const steamTimeAligner = require('./steamTimeAligner');
+        return await steamTimeAligner.getOffset();
+    }
 
-exports.getAuthCode = async secret => {
-    secret = bufferizeSecret(secret);
-    const Crypto = require('crypto');
-    const steamTimeAligner = require('./steamTimeAligner');
+    static bufferizeSecret(secret) {
+        if ('string' === typeof secret && secret.length === 28) {
+            return Buffer.from(secret, 'base64');
+        } else if (secret.match(/[0-9a-f]{40}/i)) {
+            return Buffer.from(secret, 'hex');
+        }
 
-    let offset = await steamTimeAligner.getOffset();
-    let time = Math.floor((Date.now() / 1000) + offset);
-    let buffer = Buffer.allocUnsafe(8);
-    let hmac = Crypto.createHmac('sha1', secret);
+        throw new Error('Wrong Secret Given');
+    };
 
-    buffer.writeUInt32BE(0, 0); // This will stop working in 2038!
-    buffer.writeUInt32BE(Math.floor(time / 30), 4);
-    hmac = hmac.update(buffer).digest();
+    static bufferToOTP(fullcode) {
+        const chars = '23456789BCDFGHJKMNPQRTVWXY';
+        let otp = '';
 
-    let start = hmac[19] & 0x0F;
-    hmac = hmac.slice(start, start + 4);
+        for (let i = 0; i < 5; i++) {
+            otp += chars.charAt(fullcode % chars.length);
+            fullcode /= chars.length;
+        }
 
-    return bufferToOTP(hmac.readUInt32BE(0) & 0x7FFFFFFF);
+        return otp;
+    }
+
+    async getAuthCode(secret) {
+        secret = SteamOtp.bufferizeSecret(secret);
+        const Crypto = require('crypto');
+
+        let time = Math.floor((Date.now() / 1000) + this.steamTimeOffset);
+        let buffer = Buffer.allocUnsafe(8);
+        let hmac = Crypto.createHmac('sha1', secret);
+
+        buffer.writeUInt32BE(0, 0); // This will stop working in 2038!
+        buffer.writeUInt32BE(Math.floor(time / 30), 4);
+        hmac = hmac.update(buffer).digest();
+
+        let start = hmac[19] & 0x0F;
+        hmac = hmac.slice(start, start + 4);
+
+        return SteamOtp.bufferToOTP(hmac.readUInt32BE(0) & 0x7FFFFFFF);
+    };
+
 };

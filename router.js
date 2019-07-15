@@ -1,6 +1,7 @@
 const fs = require('fs');
 const util = require('util');
-const steamOtp = require('./steamOtp');
+const otpModule = require('./steamOtp');
+const steamOtp = new otpModule.SteamOtp();
 const readFile = util.promisify(fs.readFile);
 const readDir = util.promisify(fs.readdir);
 const writeFile = util.promisify(fs.writeFile);
@@ -76,7 +77,11 @@ exports.saveToConfig = async (dirPath, file) => {
     };
 
     file = file.split('.', 2)[0];
-    return writeFile(`config/${file}.maFile`, JSON.stringify(accData, null, 2), options);
+    try {
+        return await writeFile(`config/${file}.maFile`, JSON.stringify(accData, null, 2), options);
+    } catch (err) {
+        throw new Error('File with such name already exists');
+    }
 };
 
 exports.getConfigFiles = async path => {

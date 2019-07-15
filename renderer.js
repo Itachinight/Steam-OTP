@@ -2,6 +2,7 @@ const app = require('./router');
 const allSettled = require('promise-settle');
 const pathToConfig = 'config';
 window.jQuery = require('jquery');
+window.mCustomScrollbar = require('malihu-custom-scrollbar-plugin')(jQuery);
 
 jQuery(($) => {
     let $filesSelector = $('#files');
@@ -12,10 +13,22 @@ jQuery(($) => {
     let $secretStorage = $('#shared-secret');
     let $progress = $('#progress > div');
 
-    $filesSelector.on('change', function() {
-        let file = $(this).val();
-        app.get2faFromFile(pathToConfig, file).then(otp => renderOtp(otp))
+    $filesSelector.on('click', 'li', function() {
+        toggleActiveFile($(this));
     });
+
+    function toggleActiveFile($elem) {
+        let fileName = $elem.attr('value');
+        $filesSelector.find('li').removeClass('active-file');
+        $elem.addClass('active-file');
+        app.get2faFromFile(pathToConfig, fileName).then(
+            otp => renderOtp(otp),
+            err => {
+                renderError(new Error("File is not available. Account list had been refreshed"));
+                updateFilesList();
+            }
+        );
+    }
 
     $otp.on('dblclick', () => {
         let $temp = $('<input>');
@@ -47,8 +60,9 @@ jQuery(($) => {
             return saveFileToConfig(file.path.replace(file.name, ''), file.name)
         })).then(async results => {
             await asyncForEach(results,async result => {
+                console.log(result);
                 if (result.isRejected()) {
-                    let message = "File doesn't contain shared secret";
+                    let message = result.reason().message;
                     if (message !== $err.text()) {
                         await crossFade($err, message);
                     }
@@ -64,11 +78,22 @@ jQuery(($) => {
         }
     }
 
-    function updateFilesList() {
+    async function updateFilesList() {
         $filesSelector.empty();
-        app.getConfigFiles(pathToConfig).then(values => values.forEach(value => {
-            $filesSelector.append(`<option value="${value}">${value}</option>`);
-        }));
+        let files = await app.getConfigFiles(pathToConfig);
+
+        files.forEach(file => {
+            $filesSelector.append(`<li value="${file}">${file}</li>`);
+        });
+
+        $filesSelector.mCustomScrollbar({
+            axis:'y',
+            theme:'minimal-dark',
+            scrollInertia: 350,
+            mouseWheel: {preventDefault: true}
+        });
+
+        toggleActiveFile($filesSelector.find('li:first-of-type'));
     }
 
     $('#nav li').on('click' , function (event) {
@@ -86,16 +111,17 @@ jQuery(($) => {
     });
 
     function saveFileToConfig(path, file) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve,reject) => {
             app.saveToConfig(path, file).then(
                 () => resolve(),
-                err => reject(err));
+                (err) => reject(err)
+            )
         });
     }
 
     function renderOtp(otp = false) {
         $secretStorage.val(otp.shared_secret);
-        crossFade($otp, otp.code, 200);
+        crossFade($otp, otp.code, 125);
     }
 
     function renderError(err) {
@@ -103,13 +129,12 @@ jQuery(($) => {
     }
 
     function crossFade($elem, text, duration) {
-        return new Promise((resolve => {
+        return new Promise(resolve => {
             $elem.fadeOut(duration, () => {
                 $elem.text(text);
                 resolve(text);
             }).fadeIn(duration);
-        }))
-
+        })
     }
 
     function toggleActiveMenu($elem) {
@@ -127,7 +152,7 @@ jQuery(($) => {
 
     (function updateOtp() {
         setInterval(() => {
-            let time = Math.round(Date.now() / 1000) - 1;// Prevent Updating Too Early
+            let time = Math.round(Date.now() / 1000);// Prevent Updating Too Early
             let count = time % 30;
             let secret = $secretStorage.val();
 
