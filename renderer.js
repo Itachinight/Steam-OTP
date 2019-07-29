@@ -1,6 +1,6 @@
 const app = require('./router');
+const helper = require('./helper');
 const allSettled = require('promise-settle');
-const pathToConfig = 'config';
 window.jQuery = require('jquery');
 window.mCustomScrollbar = require('malihu-custom-scrollbar-plugin')(jQuery);
 
@@ -21,21 +21,26 @@ jQuery(($) => {
         let fileName = $elem.attr('value');
         $filesSelector.find('li').removeClass('active-file');
         $elem.addClass('active-file');
-        app.get2faFromFile(pathToConfig, fileName).then(
+        app.get2faFromFile(fileName).then(
             otp => renderOtp(otp),
             err => {
-                renderError(new Error("File is not available. Account list had been refreshed"));
+                console.log(err);
+                renderError(new Error('File Is Not Available. Account List Refreshed'));
                 updateFilesList();
             }
         );
     }
 
-    $otp.on('dblclick', () => {
-        let $temp = $('<input>');
-        $('body').append($temp);
-        $temp.val($otp.text()).select();
-        document.execCommand('copy');
-        $temp.remove();
+    $otp.on('click', () => {
+        let $wrapper = $otp.parent();
+        let otp = $otp.text();
+        $wrapper.removeClass('copied');
+        setTimeout(() => $wrapper.addClass('copied'),1);
+        navigator.clipboard.writeText(otp);
+    });
+
+    $('body').on('dragenter', function () {
+        switchSection($('#nav li:nth-of-type(2) a'));
     });
 
     $drop
@@ -47,7 +52,6 @@ jQuery(($) => {
             event.preventDefault();
             $drop.removeClass('file-over');
         })
-        .on('dragover', false)
         .on('drop', event => {
             event.preventDefault();
             $drop.removeClass('file-over');
@@ -57,14 +61,14 @@ jQuery(($) => {
 
     async function uploadFiles(files) {
         allSettled(files.map(file => {
-            return saveFileToConfig(file.path.replace(file.name, ''), file.name)
+            setTimeout(() => console.log(file), 250);
+            return app.saveToConfig(file.path)
         })).then(async results => {
-            await asyncForEach(results,async result => {
-                console.log(result);
+            await helper.asyncForEach(results,async result => {
                 if (result.isRejected()) {
                     let message = result.reason().message;
                     if (message !== $err.text()) {
-                        await crossFade($err, message);
+                        await renderError(new Error(message));
                     }
                 }
             });
@@ -72,35 +76,30 @@ jQuery(($) => {
         });
     }
 
-    async function asyncForEach(array, callback) {
-        for (let index = 0; index < array.length; index++) {
-            await callback(array[index], index, array);
+    async function updateFilesList() {
+        $filesSelector.mCustomScrollbar('destroy').empty();
+        let files = await app.getConfigFiles();
+
+        if(files.length !== 0) {
+            files.forEach(file => {
+                $filesSelector.append(`<li value="${file.fullPath}">${file.base}</li>`);
+            });
+
+            $filesSelector.mCustomScrollbar({
+                theme: 'minimal-dark',
+                scrollInertia: 350,
+                mouseWheel: {preventDefault: true}
+            });
+
+            toggleActiveFile($filesSelector.find('li:first-of-type'));
         }
     }
 
-    async function updateFilesList() {
-        $filesSelector.empty();
-        let files = await app.getConfigFiles(pathToConfig);
-
-        files.forEach(file => {
-            $filesSelector.append(`<li value="${file}">${file}</li>`);
-        });
-
-        $filesSelector.mCustomScrollbar({
-            axis:'y',
-            theme:'minimal-dark',
-            scrollInertia: 350,
-            mouseWheel: {preventDefault: true}
-        });
-
-        toggleActiveFile($filesSelector.find('li:first-of-type'));
-    }
-
-    $('#nav li').on('click' , function (event) {
+    $('#nav li a').on('click' , function (event) {
         event.preventDefault();
-        let $link = $(this).children('a');
-        toggleActiveMenu($link);
-        toggleActiveSection($link.attr('href'));
+        $link = $(this);
+        if($link.hasClass('active')) return false;
+        switchSection($link);
     });
 
     $secret.on('keydown', function (event) {
@@ -110,31 +109,23 @@ jQuery(($) => {
         }
     });
 
-    function saveFileToConfig(path, file) {
-        return new Promise((resolve,reject) => {
-            app.saveToConfig(path, file).then(
-                () => resolve(),
-                (err) => reject(err)
-            )
-        });
-    }
-
     function renderOtp(otp = false) {
         $secretStorage.val(otp.shared_secret);
-        crossFade($otp, otp.code, 125);
+        $otp.fadeOut(125, () => $otp.text(otp.code)).fadeIn(125);
     }
 
     function renderError(err) {
-        crossFade($err, err.message,250);
+        return new Promise(resolve => {
+            $err.text(err.message).fadeIn(750, () => {
+                setTimeout(() => $err.fadeOut(500, () => $err.empty()), 2500)
+            });
+            resolve(err.message);
+        });
     }
 
-    function crossFade($elem, text, duration) {
-        return new Promise(resolve => {
-            $elem.fadeOut(duration, () => {
-                $elem.text(text);
-                resolve(text);
-            }).fadeIn(duration);
-        })
+    function switchSection($link) {
+        toggleActiveMenu($link);
+        toggleActiveSection($link.attr('href'));
     }
 
     function toggleActiveMenu($elem) {
@@ -152,7 +143,7 @@ jQuery(($) => {
 
     (function updateOtp() {
         setInterval(() => {
-            let time = Math.round(Date.now() / 1000);// Prevent Updating Too Early
+            let time = Math.round(Date.now() / 1000);
             let count = time % 30;
             let secret = $secretStorage.val();
 
@@ -162,7 +153,7 @@ jQuery(($) => {
                 (function reload() {
                     app.get2FaFormSecret(secret).then(otp => {
                         if (otp.code !== $otp.text()) {
-                            console.log('new');
+                            console.log('new code');
                             renderOtp(otp)
                         } else {
                             console.log('miss');

@@ -1,16 +1,23 @@
-module.exports.SteamOtp = class SteamOtp {
+const crypto = require('crypto');
+const steamTimeAligner = require('./steamTimeAligner');
 
-    constructor() {
-        this.steamTimeOffset = 0;
-        SteamOtp.alignTime().then(offset => this.steamTimeOffset = offset);
+module.exports = class SteamOtp {
+
+    static instance;
+
+    constructor(offset) {
+        this.steamTimeOffset = offset;
     }
 
-    static async alignTime() {
-        const steamTimeAligner = require('./steamTimeAligner');
-        return await steamTimeAligner.getOffset();
+    static async getInstance() {
+        if (void 0 === SteamOtp.instance) {
+            let offset = await steamTimeAligner.getOffset();
+            SteamOtp.instance = new SteamOtp(offset);
+        }
+        return SteamOtp.instance
     }
 
-    static bufferizeSecret(secret) {
+    static bufferSecret(secret) {
         if ('string' === typeof secret && secret.length === 28) {
             return Buffer.from(secret, 'base64');
         } else if (secret.match(/[0-9a-f]{40}/i)) {
@@ -19,6 +26,7 @@ module.exports.SteamOtp = class SteamOtp {
 
         throw new Error('Wrong Secret Given');
     };
+
 
     static bufferToOTP(fullcode) {
         const chars = '23456789BCDFGHJKMNPQRTVWXY';
@@ -33,12 +41,11 @@ module.exports.SteamOtp = class SteamOtp {
     }
 
     async getAuthCode(secret) {
-        secret = SteamOtp.bufferizeSecret(secret);
-        const Crypto = require('crypto');
+        secret = SteamOtp.bufferSecret(secret);
 
         let time = Math.floor((Date.now() / 1000) + this.steamTimeOffset);
         let buffer = Buffer.allocUnsafe(8);
-        let hmac = Crypto.createHmac('sha1', secret);
+        let hmac = crypto.createHmac('sha1', secret);
 
         buffer.writeUInt32BE(0, 0); // This will stop working in 2038!
         buffer.writeUInt32BE(Math.floor(time / 30), 4);

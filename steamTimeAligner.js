@@ -1,5 +1,6 @@
+const fetch = require('node-fetch');
+
 async function getTime() {
-    const fetch = require('node-fetch');
     const controller = new AbortController();
     const signal = controller.signal;
     let url = "https://api.steampowered.com/ITwoFactorService/QueryTime/v1/";

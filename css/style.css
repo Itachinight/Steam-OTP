@@ -20,6 +20,8 @@ a {
 
 header {
     background-color: #140f23;
+    -webkit-app-region: drag;
+    -webkit-user-select: none;
 }
 
 header > ul {
@@ -34,15 +36,18 @@ header > ul > li {
     display: flex;
     justify-content: center;
     align-items: center;
-    cursor: pointer;
+
 }
 
 header > ul > li > a {
     color: white;
     text-decoration: none;
-    font-size: 22px;
+    font-size: 16px;
     letter-spacing: 0.5px;
     transition: transform 600ms;
+    -webkit-app-region: no-drag;
+    -webkit-user-drag: none;
+    cursor: pointer;
 }
 
 header > ul > li:hover > a {
@@ -53,6 +58,8 @@ header > ul > li:hover > a {
 header > ul > li > a.active {
     font-weight: bold;
     transform: none;
+    pointer-events: none;
+    cursor: auto;
 }
 
 main {
@@ -76,10 +83,15 @@ section.active.visible {
     opacity: 1;
 }
 
+#from-config-dir p, label {
+    text-align: center;
+    font-size: 20px;
+}
+
 #secret {
     display: block;
     margin: 10px auto 0;
-    width: 310px;
+    width: 400px;
     height: 20px;
     font-size: 18px;
     border-radius: 15px;
@@ -95,8 +107,9 @@ section.active.visible {
 
 #files {
     list-style: none;
-    width: 40%;
+    width: 80%;
     max-height: 250px;
+    min-height: 30px;
     text-align: center;
     box-sizing: border-box;
     font-size: 20px;
@@ -115,6 +128,7 @@ section.active.visible {
 #files li {
     padding: 3px 0;
     cursor: pointer;
+    user-select: none;
 }
 
 #files li:hover {
@@ -148,12 +162,38 @@ section.active.visible {
     border: 2px solid #000000b8;
     border-radius: 30px;
     width: 190px;
+    user-select: none;
+    transition: 300ms;
+}
+
+#otp.copied {
+    animation-duration: 500ms;
+    animation-name: copy-effect;
+    animation-iteration-count: 1;
+}
+
+@keyframes copy-effect {
+    from {
+        background: transparent;
+    }
+
+    33% {
+        background: #9cb4d5;
+    }
+
+    to {
+        background: transparent;
+    }
 }
 
 #err {
     color: red;
     text-align: center;
     font-size: 26px;
+}
+
+#err p {
+    display: none;
 }
 
 #progress {
@@ -178,11 +218,13 @@ footer {
     text-align: center;
     font-size: 15px;
     padding: 8px 0;
+    -webkit-app-region: drag;
 }
 
 footer a {
     color: white;
     text-decoration: none;
+    -webkit-app-region: no-drag;
 }
 
 footer a:hover {
