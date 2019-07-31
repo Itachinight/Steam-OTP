@@ -2,7 +2,7 @@ const fetch = require('node-fetch');
 
 async function getTime() {
     const controller = new AbortController();
-    const signal = controller.signal;
+    const { signal } = controller;
     let url = "https://api.steampowered.com/ITwoFactorService/QueryTime/v1/";
     let params = {
         signal,
@@ -12,7 +12,7 @@ async function getTime() {
         },
     };
 
-    setTimeout(() => controller.abort(), 1000);
+    setTimeout(() => controller.abort(), 1500);
     const res = await fetch(url, params);
     let json = await res.json();
     return json.response.server_time;
@@ -21,9 +21,9 @@ async function getTime() {
 exports.getOffset = async () => {
     try {
         let time = await getTime();
-        return time - Math.floor(Date.now() / 1000);
+        return time - Math.round(Date.now() / 1000);
     } catch (err) {
-        console.log(err.message);
+        console.error(err.message);
         return 0;
     }
 };

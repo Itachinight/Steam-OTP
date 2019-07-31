@@ -1,11 +1,11 @@
 exports.asyncFilter = async (arr, callback) => {
-    let returnArr = [];
+    const result = [];
 
     for (let item of arr) {
-        if (await callback(item)) returnArr.push(item);
+        if (await callback(item)) result.push(item);
     }
 
-    return returnArr;
+    return result;
 };
 
 exports.asyncForEach = async (arr, callback) => {

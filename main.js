@@ -1,6 +1,5 @@
 // Modules to control application life and create native browser window
 const {app, BrowserWindow} = require('electron');
-const path = require('path');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -12,22 +11,18 @@ function createWindow() {
         width: 600,
         height: 800,
         webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: true
         },
         backgroundColor: '#8fa0cd',
         autoHideMenuBar: true,
         resizable: false,
         frame: true,
-        show: false,
+        show: true,
     });
 
     // and load the index.html of the app.
     mainWindow.loadFile('index.html');
 
-    mainWindow.once('ready-to-show', () => {
-        mainWindow.show();
-    });
 
     //mainWindow.removeMenu();
 

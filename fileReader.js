@@ -41,6 +41,7 @@ async function getLoginFromJson(filePath) {
 }
 
 async function getSteam2FaFields(filePath) {
+    filePath.ext = filePath.ext.toLowerCase();
     if (filePath.ext === '.db' || filePath.ext === '.mafile') {
         const fullPath = path.join(filePath.dir, filePath.base);
         const fileContent = await readFile(fullPath, 'UTF-8');
@@ -61,7 +62,6 @@ exports.getDataFromFile = async filePath => {
     try {
         accData = await getSteam2FaFields(filePath);
     } catch (err) {
-        console.error(err);
         if (err instanceof SyntaxError) {
             throw new Error(`${filePath.base} is not valid JSON`);
         } else if (err instanceof TypeError) {
@@ -69,11 +69,8 @@ exports.getDataFromFile = async filePath => {
         } else throw err;
     }
 
-    try {
-        SteamOtp.bufferSecret(accData.shared_secret);
-    } catch (err) {
-        console.error(err);
-        throw new Error(`${filePath.base} doesn't contain shared secret`);
+    if (!SteamOtp.isSecretValid(accData.shared_secret)) {
+        throw new Error(`${filePath.base} doesn't contain valid shared secret`);
     }
 
     return accData;

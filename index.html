@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Steam OTP</title>
-    <link rel="stylesheet" href="./css/style.css">
-    <link rel="stylesheet" href="./css/jquery.mCustomScrollbar.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/mCustomScrollbarMinimalDark.css">
 </head>
 <body>
 <header>
@@ -45,7 +45,6 @@
 </div>
 
 <div id="otp">
-    <input id="shared-secret" type="hidden" value="">
     <p>&nbsp</p>
 </div>
 
@@ -54,7 +53,10 @@
 </div>
 
 <footer>dev by <a href="https://t.me/ItachiNight" target="_blank">@ItachiNight</a></footer>
-<!-- You can also require other files to run in this process -->
+<div id="loader">
+    <div class="lds-grid"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+</div>
+
 <script src="./renderer.js"></script>
 </body>
 </html>

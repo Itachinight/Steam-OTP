@@ -1,125 +1,84 @@
-const app = require('./router');
+const App = require('./app');
 const helper = require('./helper');
-const allSettled = require('promise-settle');
+Promise.allSettled = require('promise-settle');
 window.jQuery = require('jquery');
 window.mCustomScrollbar = require('malihu-custom-scrollbar-plugin')(jQuery);
 
-jQuery(($) => {
-    let $filesSelector = $('#files');
-    let $otp = $('#otp p');
-    let $err = $('#err p');
-    let $secret = $('#secret');
-    let $drop = $('#from-file');
-    let $secretStorage = $('#shared-secret');
-    let $progress = $('#progress > div');
+jQuery(async ($) => {
+    const $filesSelector = $('#files');
+    const $otp = $('#otp p');
+    const $err = $('#err p');
+    const $secret = $('#secret');
+    const $drop = $('#from-file');
+    const $progress = $('#progress > div');
+    const scrollBarOpts = {
+        theme: 'minimal-dark',
+        scrollInertia: 350,
+        mouseWheel: {
+            preventDefault: true,
+            scrollAmount: 150,
+        }
+    };
+    const app = new App();
+    await app.init();
+    $('#loader').fadeOut(600);
 
-    $filesSelector.on('click', 'li', function() {
-        toggleActiveFile($(this));
-    });
-
-    function toggleActiveFile($elem) {
+    async function toggleActiveFile($elem) {
         let fileName = $elem.attr('value');
         $filesSelector.find('li').removeClass('active-file');
         $elem.addClass('active-file');
-        app.get2faFromFile(fileName).then(
-            otp => renderOtp(otp),
-            err => {
-                console.log(err);
-                renderError(new Error('File Is Not Available. Account List Refreshed'));
-                updateFilesList();
-            }
-        );
+
+        try {
+            const otp = await app.get2faFromFile(fileName);
+            renderOtp(otp);
+        } catch (err) {
+            console.error(err);
+            renderError(new Error('File Is Not Available. Account List Refreshed'));
+            await updateFilesList();
+        }
     }
 
-    $otp.on('click', () => {
-        let $wrapper = $otp.parent();
-        let otp = $otp.text();
-        $wrapper.removeClass('copied');
-        setTimeout(() => $wrapper.addClass('copied'),1);
-        navigator.clipboard.writeText(otp);
-    });
-
-    $('body').on('dragenter', function () {
-        switchSection($('#nav li:nth-of-type(2) a'));
-    });
-
-    $drop
-        .on('dragover', event => {
-            event.preventDefault();
-            $drop.addClass('file-over');
-        })
-        .on('dragleave', event => {
-            event.preventDefault();
-            $drop.removeClass('file-over');
-        })
-        .on('drop', event => {
-            event.preventDefault();
-            $drop.removeClass('file-over');
-            let files = Object.values(event.originalEvent.dataTransfer.files);
-            uploadFiles(files);
-        });
-
     async function uploadFiles(files) {
-        allSettled(files.map(file => {
-            setTimeout(() => console.log(file), 250);
-            return app.saveToConfig(file.path)
-        })).then(async results => {
-            await helper.asyncForEach(results,async result => {
-                if (result.isRejected()) {
-                    let message = result.reason().message;
-                    if (message !== $err.text()) {
-                        await renderError(new Error(message));
-                    }
+        let results = await Promise.allSettled(files.map(file => app.saveToConfig(file.path)));
+        await helper.asyncForEach(results,async result => {
+            if (result.isRejected()) {
+                let message = result.reason().message;
+                if (message !== $err.text()) {
+                    await renderError(new Error(message));
                 }
-            });
-            updateFilesList();
+            }
         });
+        await updateFilesList();
     }
 
     async function updateFilesList() {
         $filesSelector.mCustomScrollbar('destroy').empty();
-        let files = await app.getConfigFiles();
+        const files = await app.getConfigFiles();
 
         if(files.length !== 0) {
             files.forEach(file => {
                 $filesSelector.append(`<li value="${file.fullPath}">${file.base}</li>`);
             });
 
-            $filesSelector.mCustomScrollbar({
-                theme: 'minimal-dark',
-                scrollInertia: 350,
-                mouseWheel: {preventDefault: true}
-            });
+            $filesSelector.mCustomScrollbar(scrollBarOpts);
 
-            toggleActiveFile($filesSelector.find('li:first-of-type'));
+            await toggleActiveFile($filesSelector.find('li:first-of-type'));
         }
     }
 
-    $('#nav li a').on('click' , function (event) {
-        event.preventDefault();
-        $link = $(this);
-        if($link.hasClass('active')) return false;
-        switchSection($link);
-    });
-
-    $secret.on('keydown', function (event) {
-        let secret = $(this).val();
-        if (event.keyCode === 13 && secret !== $secretStorage.val()) {
-            app.get2FaFormSecret(secret).then(otp => renderOtp(otp), err => renderError(err));
-        }
-    });
-
     function renderOtp(otp = false) {
-        $secretStorage.val(otp.shared_secret);
-        $otp.fadeOut(125, () => $otp.text(otp.code)).fadeIn(125);
+        const { code } = otp;
+        $otp.fadeOut(125, () => $otp.text(code)).fadeIn(125);
     }
 
     function renderError(err) {
+        console.error(err);
+        const { message } = err;
         return new Promise(resolve => {
-            $err.text(err.message).fadeIn(750, () => {
+            $err.text(message).fadeIn(750, () => {
                 setTimeout(() => $err.fadeOut(500, () => $err.empty()), 2500)
             });
-            resolve(err.message);
+            resolve(message);
         });
     }
 
@@ -145,25 +104,78 @@ jQuery(($) => {
         setInterval(() => {
             let time = Math.round(Date.now() / 1000);
             let count = time % 30;
-            let secret = $secretStorage.val();
 
             $progress.css('width', `${Math.round(100 / 29 * count)}%`);
 
-            if (count === 0 && secret !== '') {
+            if (count === 1) {
                 (function reload() {
-                    app.get2FaFormSecret(secret).then(otp => {
-                        if (otp.code !== $otp.text()) {
-                            console.log('new code');
-                            renderOtp(otp)
-                        } else {
-                            console.log('miss');
-                            setTimeout(reload, 500);
-                        }
-                    })
+                    const otp = app.refresh2Fa();
+                    if (otp.code !== $otp.text()) {
+                        console.log('new code');
+                        renderOtp(otp)
+                    } else {
+                        console.log('miss');
+                        setTimeout(reload, 500);
+                    }
                 }());
             }
         }, 1000);
     }());
 
-    updateFilesList();
+    await updateFilesList();
+
+    // Events //
+
+    $('body').on('dragenter', function () {
+        switchSection($('#nav li:nth-of-type(2) a'));
+    });
+
+    $drop
+        .on('dragover', event => {
+            event.preventDefault();
+            $drop.addClass('file-over');
+        })
+        .on('dragleave', event => {
+            event.preventDefault();
+            $drop.removeClass('file-over');
+        })
+        .on('drop', async event => {
+            event.preventDefault();
+            $drop.removeClass('file-over');
+            const files = Object.values(event.originalEvent.dataTransfer.files);
+
+            await uploadFiles(files);
+        });
+
+    $('#nav li a').on('click' , function (event) {
+        event.preventDefault();
+        const $link = $(this);
+        if ($link.hasClass('active')) return false;
+        switchSection($link);
+    });
+
+    $filesSelector.on('click', 'li', async function() {
+        await toggleActiveFile($(this));
+    });
+
+    $secret.on('keydown', function (event) {
+        if (event.keyCode === 13) {
+            let secret = $(this).val();
+            $filesSelector.find('li').removeClass('active-file');
+            try {
+                const otp = app.get2FaFormSecret(secret);
+                renderOtp(otp);
+            } catch (err) {
+                renderError(err);
+            }
+        }
+    });
+
+    $otp.on('click', () => {
+        let $wrapper = $otp.parent();
+        let otp = $otp.text();
+        $wrapper.removeClass('copied');
+        setTimeout(() => $wrapper.addClass('copied'),20);
+        navigator.clipboard.writeText(otp);
+    });
 });
