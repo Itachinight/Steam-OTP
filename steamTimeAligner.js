@@ -14,7 +14,7 @@ async function getTime() {
 
     setTimeout(() => controller.abort(), 1500);
     const res = await fetch(url, params);
-    let json = await res.json();
+    const json = await res.json();
     return json.response.server_time;
 }
 

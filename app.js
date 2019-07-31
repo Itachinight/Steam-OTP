@@ -14,6 +14,10 @@ module.exports = class App {
     constructor() {
         dotEnv.config();
         this.configDir = process.env.CONFIG_PATH;
+        this.writeOpts = {
+            encoding: 'UTF-8',
+            flag: 'wx',
+        }
     }
 
     async init() {
@@ -47,10 +51,6 @@ module.exports = class App {
     async saveToConfig(file) {
         const filePath = path.parse(file);
         const accData = fileReader.getDataFromFile(filePath);
-        const options = {
-            encoding: 'UTF-8',
-            flag: 'wx',
-        };
         const fullPath = path.format({
             dir: this.configDir,
             name: filePath.name,
@@ -58,9 +58,8 @@ module.exports = class App {
         });
 
         try {
-            return await writeFile(fullPath, JSON.stringify(await accData, null, 2), options);
+            return await writeFile(fullPath, JSON.stringify(await accData, null, 2), this.writeOpts);
         } catch (err) {
-            console.error(err);
             if (err.code === 'EEXIST') throw new Error(`${filePath.base} is already exists`);
         }
     };
