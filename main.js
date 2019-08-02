@@ -8,20 +8,22 @@ let mainWindow;
 function createWindow() {
     // Create the browser window.
     mainWindow = new BrowserWindow({
-        width: 600,
+        minWidth: 650,
+        minHeight: 800,
+        width: 650,
         height: 800,
         webPreferences: {
             nodeIntegration: true
         },
         backgroundColor: '#8fa0cd',
         autoHideMenuBar: true,
-        resizable: false,
+        resizable: true,
         frame: true,
         show: true,
     });
 
     // and load the index.html of the app.
-    mainWindow.loadFile('index.html');
+    mainWindow.loadFile('dist/static/index.html');
 
 
     //mainWindow.removeMenu();

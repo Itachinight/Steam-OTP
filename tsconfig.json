@@ -1,0 +1,10 @@
+{
+  "compileOnSave": true,
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "ES2018",
+    "sourceMap": false,
+    "rootDir": "./src",
+    "outDir": "./dist"
+  }
+}
