@@ -1,0 +1,317 @@
+@import url('https://fonts.googleapis.com/css?family=Open+Sans&display=swap');
+
+body {
+    font-family: 'Open Sans', sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100vh;
+}
+
+body,ul,li,p {
+    margin: 0;
+    padding: 0;
+}
+
+a {
+    outline: none;
+    border: none;
+    -webkit-user-drag: none
+}
+
+header {
+    background-color: #140f23;
+    -webkit-app-region: drag;
+    user-select: none;
+}
+
+header > ul {
+    display: flex;
+    height: 80px;
+}
+
+header > ul > li {
+    list-style: none;
+    flex-grow: 1;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+}
+
+header > ul > li > a {
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+    letter-spacing: 0.5px;
+    transition: transform 600ms;
+    -webkit-app-region: no-drag;
+    cursor: pointer;
+}
+
+header > ul > li:hover > a {
+    color: white;
+    transform: scale(1.1);
+}
+
+header > ul > li > a.active {
+    font-weight: bold;
+    transform: none;
+    pointer-events: none;
+    cursor: auto;
+}
+
+main {
+    flex-grow: 1;
+}
+
+section {
+    display: none;
+    opacity: 0;
+    transition: opacity linear 400ms;
+    height: 100%;
+    justify-content: center;
+    align-items: center;
+}
+
+section.active {
+    display: flex;
+}
+
+section.active.visible {
+    opacity: 1;
+}
+
+#from-config-dir p, label {
+    text-align: center;
+    font-size: 20px;
+    user-select: none;
+}
+
+#secret {
+    display: block;
+    margin: 10px auto 0;
+    width: 400px;
+    height: 20px;
+    font-size: 18px;
+    border-radius: 15px;
+    padding: 5px 6px;
+    border: none;
+    outline: none;
+    text-align: center;
+}
+
+#from-config-dir {
+    flex-direction: column;
+}
+
+#files {
+    list-style: none;
+    width: 80%;
+    max-height: 250px;
+    min-height: 30px;
+    text-align: center;
+    box-sizing: border-box;
+    font-size: 20px;
+    border: 2px solid grey;
+    background: white;
+    margin: 20px 0 0;
+    outline: none;
+    padding: 0;
+    -webkit-appearance: none;
+}
+
+#files > .mCSB_scrollTools {
+    margin: 5px 0;
+}
+
+#files li {
+    padding: 3px 0;
+    cursor: pointer;
+    user-select: none;
+}
+
+#files li:hover {
+    background: lightblue;
+}
+
+#files li.active-file {
+    background: lightskyblue;
+    pointer-events: none;
+}
+
+#from-file {
+    user-select: none;
+    border: 4px solid transparent;
+    transition: border 200ms ease,
+                opacity linear 400ms;
+    color: black;
+    font-size: 32px;
+}
+
+#from-file.file-over {
+    border: 4px solid #140f23;
+    background: #c2ceef;
+}
+
+#otp {
+    text-align: center;
+    letter-spacing: 3px;
+    font-size: 40px;
+    margin: 20px auto 15px;
+    color: mediumvioletred;
+    border: 2px solid #000000b8;
+    border-radius: 30px;
+    width: 190px;
+    user-select: none;
+    transition: 300ms;
+}
+
+#otp.copied {
+    animation-duration: 500ms;
+    animation-name: copy-effect;
+    animation-iteration-count: 1;
+}
+
+@keyframes copy-effect {
+    from {
+        background: transparent;
+    }
+
+    33% {
+        background: #9cb4d5;
+    }
+
+    to {
+        background: transparent;
+    }
+}
+
+#err {
+    color: red;
+    text-align: center;
+    font-size: 26px;
+}
+
+#err p {
+    display: none;
+}
+
+#progress {
+    height: 16px;
+    border: 1px solid;
+    border-radius: 5px;
+    width: 500px;
+    margin: 0 auto 20px;
+}
+
+#progress > div {
+    background: red;
+    width: 0;
+    height: 100%;
+    border-radius: 5px;
+    transition: width linear 1000ms;
+}
+
+footer {
+    background: #140f23;
+    color: white;
+    text-align: center;
+    font-size: 15px;
+    padding: 8px 0;
+    -webkit-app-region: drag;
+    user-select: none;
+}
+
+footer a {
+    color: white;
+    text-decoration: none;
+    -webkit-app-region: no-drag;
+}
+
+footer a:hover {
+    color: lightskyblue;
+}
+
+/* Preload Animation*/
+#loader {
+    position: absolute;
+    height: 100vh;
+    width: 100vw;
+    background-color: #8fa0cd;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.lds-grid {
+    transform: scale(3);
+    opacity: 0.5;
+    display: inline-block;
+    position: relative;
+    width: 64px;
+    height: 64px;
+}
+.lds-grid div {
+    position: absolute;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #dcdcdc;
+    animation: lds-grid 1.2s linear infinite;
+}
+.lds-grid div:nth-child(1) {
+    top: 6px;
+    left: 6px;
+    animation-delay: 0s;
+}
+.lds-grid div:nth-child(2) {
+    top: 6px;
+    left: 26px;
+    animation-delay: -0.4s;
+}
+.lds-grid div:nth-child(3) {
+    top: 6px;
+    left: 45px;
+    animation-delay: -0.8s;
+}
+.lds-grid div:nth-child(4) {
+    top: 26px;
+    left: 6px;
+    animation-delay: -0.4s;
+}
+.lds-grid div:nth-child(5) {
+    top: 26px;
+    left: 26px;
+    animation-delay: -0.8s;
+}
+.lds-grid div:nth-child(6) {
+    top: 26px;
+    left: 45px;
+    animation-delay: -1.2s;
+}
+.lds-grid div:nth-child(7) {
+    top: 45px;
+    left: 6px;
+    animation-delay: -0.8s;
+}
+.lds-grid div:nth-child(8) {
+    top: 45px;
+    left: 26px;
+    animation-delay: -1.2s;
+}
+.lds-grid div:nth-child(9) {
+    top: 45px;
+    left: 45px;
+    animation-delay: -1.6s;
+}
+@keyframes lds-grid {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}

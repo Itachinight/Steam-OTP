@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en-EN">
+<head>
+    <meta charset="UTF-8">
+    <title>Steam OTP</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/mCustomScrollbarMinimalDark.css">
+</head>
+<body>
+<header>
+    <ul id="nav">
+        <li>
+            <a href="#from-secret">Get OTP From SharedSecret</a>
+        </li>
+        <li>
+            <a href="#from-file">Save File To Config</a>
+        </li>
+        <li>
+            <a class="active" href="#from-config-dir">Get OTP From Config</a>
+        </li>
+    </ul>
+</header>
+
+<main>
+    <section id="from-secret">
+        <label>
+            Submit Your Shared Secret String To Get OTP
+            <input type="text" id="secret">
+        </label>
+    </section>
+
+    <section id="from-file">
+        Drop db/maFile Here
+    </section>
+
+    <section class="active visible" id="from-config-dir">
+        <p>Select Your Account</p>
+        <ul id="files">
+        </ul>
+    </section>
+</main>
+
+<div id="err">
+    <p></p>
+</div>
+
+<div id="otp">
+    <p>&nbsp</p>
+</div>
+
+<div id="progress">
+    <div></div>
+</div>
+
+<footer>dev by <a href="https://t.me/ItachiNight" target="_blank">@ItachiNight</a></footer>
+<div id="loader">
+    <div class="lds-grid"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+</div>
+
+<script src="renderer.js"></script>
+</body>
+</html>
