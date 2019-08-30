@@ -3,7 +3,7 @@ import * as util from 'util';
 import * as path from 'path';
 import * as dotEnv from 'dotenv';
 import SteamOtp from './SteamOtp';
-import { getDataFromFile } from './fileReader';
+import {getDataFromFile, getExampleMaFile} from './fileReader';
 import { asyncFilter } from './helper';
 import SteamTimeAligner from './SteamTimeAligner';
 import {AccountAuthData, AccountFileData, FullFilePath} from "./index";
@@ -52,7 +52,7 @@ export default class App {
         return this.accountAuthData;
     };
 
-    get2FaFormSecret(shared_secret: string): AccountAuthData {
+    get2FaFromSecret(shared_secret: string): AccountAuthData {
         this.accountAuthData = {
             shared_secret,
             code: this.steamOtp.getAuthCode(shared_secret)
@@ -63,21 +63,20 @@ export default class App {
 
     refresh2Fa(): AccountAuthData {
         this.accountAuthData.code = this.steamOtp.getAuthCode(this.accountAuthData.shared_secret);
-
         return this.accountAuthData;
     };
 
     async saveToConfig(file: string): Promise<void> {
         const filePath: path.ParsedPath = path.parse(file);
         const accData: Promise<AccountFileData> = getDataFromFile(filePath);
+        const example: Promise<object> = getExampleMaFile();
         const fullPath: string = path.format({
             dir: this.configDir,
             name: filePath.name,
             ext: '.maFile'
         });
-        return writeFile(fullPath, JSON.stringify(await accData, null, 2), this.writeOpts);
 
-
+        return writeFile(fullPath, JSON.stringify({...await example, ...await accData}, null, 2), this.writeOpts);
     };
 
     async getConfigFiles(): Promise<FullFilePath[]> {

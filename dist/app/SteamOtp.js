@@ -4,24 +4,23 @@ const crypto = require("crypto");
 class SteamOtp {
     constructor(offset) {
         this.steamTimeOffset = offset;
-        this.chars = '23456789BCDFGHJKMNPQRTVWXY';
     }
     static isSecretValid(secret) {
         return /^[a-z0-9+\\\/=]{28}$/i.test(secret);
     }
     static bufferSecret(secret) {
-        if (this.isSecretValid(secret)) {
+        if (SteamOtp.isSecretValid(secret)) {
             return Buffer.from(secret, 'base64');
         }
         else
             throw new Error('Wrong Secret Given');
     }
     ;
-    bufferToOTP(fullCode) {
+    static bufferToOTP(fullCode) {
         let otp = '';
         for (let i = 0; i < 5; i++) {
-            otp += this.chars.charAt(fullCode % this.chars.length);
-            fullCode /= this.chars.length;
+            otp += SteamOtp.chars.charAt(fullCode % SteamOtp.chars.length);
+            fullCode /= SteamOtp.chars.length;
         }
         return otp;
     }
@@ -33,11 +32,12 @@ class SteamOtp {
         buffer.writeUInt32BE(Math.floor(time / 30), 4);
         const hmac = crypto.createHmac('sha1', bufferedSecret);
         let hmacBuffer = hmac.update(buffer).digest();
-        let start = hmac[19] & 0x0F;
+        const start = hmacBuffer[19] & 0x0F;
         hmacBuffer = hmacBuffer.slice(start, start + 4);
-        return this.bufferToOTP(hmacBuffer.readUInt32BE(0) & 0x7FFFFFFF);
+        return SteamOtp.bufferToOTP(hmacBuffer.readUInt32BE(0) & 0x7FFFFFFF);
     }
     ;
 }
+SteamOtp.chars = '23456789BCDFGHJKMNPQRTVWXY';
 exports.default = SteamOtp;
 ;

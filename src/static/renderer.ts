@@ -173,7 +173,7 @@ jQuery(async ($) => {
             const secret: string = <string>$(this).val();
 
             try {
-                const otp: AccountAuthData = app.get2FaFormSecret(secret);
+                const otp: AccountAuthData = app.get2FaFromSecret(secret);
                 $filesSelector.find('li').removeClass('active-file');
                 renderOtp(otp);
             } catch (err) {

@@ -7,7 +7,7 @@ import {AccountFileData} from "./index";
 const readFile = util.promisify(fs.readFile);
 
 async function getDataFromDb(content: string, accountName: string=''): Promise<AccountFileData> {
-    let { shared_secret, identity_secret, device_id } = JSON.parse(content)._MobileAuthenticator;
+    const { shared_secret, identity_secret, device_id } = JSON.parse(content)._MobileAuthenticator;
     return {
         account_name: accountName,
         device_id,
@@ -16,14 +16,8 @@ async function getDataFromDb(content: string, accountName: string=''): Promise<A
     };
 }
 
-async function getDataFromMafile(content: string): Promise<AccountFileData> {
-    let { account_name, shared_secret, identity_secret, device_id } = JSON.parse(content);
-    return {
-        account_name,
-        device_id,
-        identity_secret,
-        shared_secret,
-    };
+async function getDataFromMaFile(content: string): Promise<AccountFileData> {
+    return JSON.parse(content);
 }
 
 async function getLoginFromJson(filePath: path.ParsedPath): Promise<string> {
@@ -53,7 +47,7 @@ async function getSteam2FaFields(filePath: path.ParsedPath): Promise<AccountFile
             const login = await getLoginFromJson(filePath);
             return await getDataFromDb(fileContent, login);
         } else if (filePath.ext === '.mafile') {
-            return await getDataFromMafile(fileContent);
+            return await getDataFromMaFile(fileContent);
         }
 
     } else throw new TypeError();
@@ -77,4 +71,9 @@ export async function getDataFromFile(filePath: path.ParsedPath): Promise<Accoun
     }
 
     return accData;
+}
+
+export async function getExampleMaFile(): Promise<object> {
+    const content: string = await readFile('./example/example.maFile', 'UTF-8');
+    return JSON.parse(content);
 }

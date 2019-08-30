@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 async function asyncFilter(arr, callback) {
     const result = [];
-    for await (let item of arr) {
-        if (callback(item))
+    for (let item of arr) {
+        if (await callback(item))
             result.push(item);
     }
     return result;

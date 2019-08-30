@@ -6,7 +6,7 @@ const path = require("path");
 const SteamOtp_1 = require("./SteamOtp");
 const readFile = util.promisify(fs.readFile);
 async function getDataFromDb(content, accountName = '') {
-    let { shared_secret, identity_secret, device_id } = JSON.parse(content)._MobileAuthenticator;
+    const { shared_secret, identity_secret, device_id } = JSON.parse(content)._MobileAuthenticator;
     return {
         account_name: accountName,
         device_id,
@@ -14,14 +14,8 @@ async function getDataFromDb(content, accountName = '') {
         shared_secret,
     };
 }
-async function getDataFromMafile(content) {
-    let { account_name, shared_secret, identity_secret, device_id } = JSON.parse(content);
-    return {
-        account_name,
-        device_id,
-        identity_secret,
-        shared_secret,
-    };
+async function getDataFromMaFile(content) {
+    return JSON.parse(content);
 }
 async function getLoginFromJson(filePath) {
     const { dir, name } = filePath;
@@ -48,7 +42,7 @@ async function getSteam2FaFields(filePath) {
             return await getDataFromDb(fileContent, login);
         }
         else if (filePath.ext === '.mafile') {
-            return await getDataFromMafile(fileContent);
+            return await getDataFromMaFile(fileContent);
         }
     }
     else
@@ -75,3 +69,8 @@ async function getDataFromFile(filePath) {
     return accData;
 }
 exports.getDataFromFile = getDataFromFile;
+async function getExampleMaFile() {
+    const content = await readFile('./example/example.maFile', 'UTF-8');
+    return JSON.parse(content);
+}
+exports.getExampleMaFile = getExampleMaFile;

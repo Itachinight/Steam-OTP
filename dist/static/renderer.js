@@ -144,7 +144,7 @@ jQuery(async ($) => {
         if (event.key === 'Enter') {
             const secret = $(this).val();
             try {
-                const otp = app.get2FaFormSecret(secret);
+                const otp = app.get2FaFromSecret(secret);
                 $filesSelector.find('li').removeClass('active-file');
                 renderOtp(otp);
             }

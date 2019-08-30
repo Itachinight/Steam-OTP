@@ -2,12 +2,11 @@ import * as crypto from 'crypto';
 
 export default class SteamOtp {
 
+    public static readonly chars: string = '23456789BCDFGHJKMNPQRTVWXY';
     public readonly steamTimeOffset: number;
-    public readonly chars: string;
 
     public constructor(offset: number) {
         this.steamTimeOffset = offset;
-        this.chars = '23456789BCDFGHJKMNPQRTVWXY';
     }
 
     public static isSecretValid(secret: string): boolean {
@@ -15,18 +14,18 @@ export default class SteamOtp {
     }
 
     public static bufferSecret(secret: string): Buffer {
-        if (this.isSecretValid(secret)) {
+        if (SteamOtp.isSecretValid(secret)) {
             return Buffer.from(secret, 'base64');
         } else throw new Error('Wrong Secret Given');
     };
 
 
-    private bufferToOTP(fullCode: number): string {
+    private static bufferToOTP(fullCode: number): string {
         let otp: string = '';
 
         for (let i = 0; i < 5; i++) {
-            otp += this.chars.charAt(fullCode % this.chars.length);
-            fullCode /= this.chars.length;
+            otp += SteamOtp.chars.charAt(fullCode % SteamOtp.chars.length);
+            fullCode /= SteamOtp.chars.length;
         }
 
         return otp;
@@ -42,11 +41,10 @@ export default class SteamOtp {
 
         const hmac: crypto.Hmac = crypto.createHmac('sha1', bufferedSecret);
         let hmacBuffer: Buffer = hmac.update(buffer).digest();
-        let start: number = hmac[19] & 0x0F;
+        const start: number = hmacBuffer[19] & 0x0F;
 
         hmacBuffer = hmacBuffer.slice(start, start + 4);
 
-        return this.bufferToOTP(hmacBuffer.readUInt32BE(0) & 0x7FFFFFFF);
+        return SteamOtp.bufferToOTP(hmacBuffer.readUInt32BE(0) & 0x7FFFFFFF);
     };
-
 };

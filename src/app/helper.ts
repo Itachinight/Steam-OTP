@@ -3,8 +3,8 @@ import { AsyncFilterCallback, AsyncForEachCallback } from "./index";
 export async function asyncFilter(arr: any[], callback: AsyncFilterCallback): Promise<any> {
     const result: any[] = [];
 
-    for await (let item of arr) {
-        if (callback(item)) result.push(item);
+    for (let item of arr) {
+        if (await callback(item)) result.push(item);
     }
 
     return result;

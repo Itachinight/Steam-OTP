@@ -38,7 +38,7 @@ class App {
         return this.accountAuthData;
     }
     ;
-    get2FaFormSecret(shared_secret) {
+    get2FaFromSecret(shared_secret) {
         this.accountAuthData = {
             shared_secret,
             code: this.steamOtp.getAuthCode(shared_secret)
@@ -54,12 +54,13 @@ class App {
     async saveToConfig(file) {
         const filePath = path.parse(file);
         const accData = fileReader_1.getDataFromFile(filePath);
+        const example = fileReader_1.getExampleMaFile();
         const fullPath = path.format({
             dir: this.configDir,
             name: filePath.name,
             ext: '.maFile'
         });
-        return writeFile(fullPath, JSON.stringify(await accData, null, 2), this.writeOpts);
+        return writeFile(fullPath, JSON.stringify({ ...await example, ...await accData }, null, 2), this.writeOpts);
     }
     ;
     async getConfigFiles() {
