@@ -8,6 +8,38 @@ body {
     height: 100vh;
 }
 
+.modal-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    background-color: #1b1a1a7a;
+}
+
+.auth-data {
+    width: 500px;
+    height: 180px;
+    background: white;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+}
+
+.auth-data label {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+
+.auth-data label input {
+    width: 80%;
+}
+
 body,ul,li,p {
     margin: 0;
     padding: 0;

@@ -1,5 +1,5 @@
 // Modules to control application life and create native browser window
-const {app, BrowserWindow} = require('electron');
+const {app, BrowserWindow, ipcMain} = require('electron');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -61,3 +61,28 @@ app.on('activate', () => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
 
+ipcMain.on("open-trades",(event, arg) => {
+    global.sharedObject = {accountData: arg};
+
+    const tradesWindow = new BrowserWindow({
+        width: 450,
+        height: 800,
+        webPreferences: {
+            nodeIntegration: true
+        },
+        backgroundColor: '#8fa0cd',
+        autoHideMenuBar: true,
+        resizable: true,
+        frame: true,
+        show: true,
+        modal: true,
+        parent: mainWindow
+    });
+
+    tradesWindow.loadFile('dist/static/trades.html');
+
+    tradesWindow.once('ready-to-show', () => {
+        tradesWindow.webContents.openDevTools();
+        tradesWindow.show();
+    })
+});

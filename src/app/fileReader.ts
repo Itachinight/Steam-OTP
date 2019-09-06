@@ -4,6 +4,7 @@ import * as path from 'path';
 import SteamOtp from './SteamOtp';
 import {AccountFileData} from "./index";
 
+const JsonBigInt = require('json-bigint')({"storeAsString": true});
 const readFile = util.promisify(fs.readFile);
 
 async function getDataFromDb(content: string, accountName: string=''): Promise<AccountFileData> {
@@ -16,8 +17,8 @@ async function getDataFromDb(content: string, accountName: string=''): Promise<A
     };
 }
 
-async function getDataFromMaFile(content: string): Promise<AccountFileData> {
-    return JSON.parse(content);
+function getDataFromMaFile(content: string): AccountFileData {
+    return JsonBigInt.parse(content);
 }
 
 async function getLoginFromJson(filePath: path.ParsedPath): Promise<string> {
@@ -47,7 +48,7 @@ async function getSteam2FaFields(filePath: path.ParsedPath): Promise<AccountFile
             const login = await getLoginFromJson(filePath);
             return await getDataFromDb(fileContent, login);
         } else if (filePath.ext === '.mafile') {
-            return await getDataFromMaFile(fileContent);
+            return getDataFromMaFile(fileContent);
         }
 
     } else throw new TypeError();
@@ -71,9 +72,4 @@ export async function getDataFromFile(filePath: path.ParsedPath): Promise<Accoun
     }
 
     return accData;
-}
-
-export async function getExampleMaFile(): Promise<object> {
-    const content: string = await readFile('./example/example.maFile', 'UTF-8');
-    return JSON.parse(content);
 }

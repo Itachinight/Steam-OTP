@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { RequestInit, RequestInfo, Response } from "node-fetch";
+import {RequestInit, RequestInfo, Response} from "node-fetch";
 import {SteamResponse} from "./index";
 
 export default class SteamTimeAligner {

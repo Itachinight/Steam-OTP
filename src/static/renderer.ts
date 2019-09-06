@@ -6,6 +6,7 @@ import * as mCustomScrollbar from 'malihu-custom-scrollbar-plugin';
 import CustomScrollbarOptions = MCustomScrollbar.CustomScrollbarOptions;
 import {AccountAuthData, FullFilePath, WebKitDragEvent, WebKitFile} from "../app";
 import Event = JQuery.Event;
+import {ipcRenderer} from "electron";
 
 jQuery(async ($) => {
     mCustomScrollbar($);
@@ -37,7 +38,7 @@ jQuery(async ($) => {
             renderOtp(otp);
         } catch (err) {
             console.error(err);
-            renderError(new Error('File Is Not Available. Account List Refreshed'));
+            await renderError(new Error('File Is Not Available. Account List Refreshed'));
             await updateFilesList();
         }
     }
@@ -180,6 +181,28 @@ jQuery(async ($) => {
                 renderError(err);
             }
         }
+    });
+
+    $('#trades').on('click', () => {
+        console.log(app.accountData);
+        ipcRenderer.send("open-trades", app.accountData);
+        // $('body').append(
+        //     `<div class="modal-wrapper">
+        //         <div class="auth-data">
+        //             <label>
+        //                 Login
+        //                 <input id="login">
+        //             </label>
+        //             <label>
+        //                 Password
+        //                 <input id="password">
+        //             </label>
+        //             <input type="submit" value="Send" id="auth">
+        //         </div>
+        //     </div>`
+        // );
+        $("#auth").on('click', () => {
+        });
     });
 
     $otp.on('click', () => {

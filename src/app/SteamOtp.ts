@@ -31,15 +31,37 @@ export default class SteamOtp {
         return otp;
     }
 
-    public getAuthCode(secret: string): string {
-        const bufferedSecret: Buffer = SteamOtp.bufferSecret(secret);
+    public static getConfirmationKey(identitySecret: string, time: number, tag: string): string {
+        const bufferedIdentitySecret: Buffer = SteamOtp.bufferSecret(identitySecret);
+        let dataLen: number = 8;
+
+        if (tag) {
+            if (tag.length > 32) {
+                dataLen += 32;
+            } else {
+                dataLen += tag.length;
+            }
+        }
+
+        const buffer: Buffer = Buffer.allocUnsafe(dataLen);
+        buffer.writeUInt32BE(0, 0);
+        buffer.writeUInt32BE(time, 4);
+
+        if (tag) buffer.write(tag, 8);
+
+        const hmac: crypto.Hmac = crypto.createHmac('sha1', bufferedIdentitySecret);
+        return hmac.update(buffer).digest('base64');
+    };
+
+    public getAuthCode(sharedSecret: string): string {
+        const bufferedSharedSecret: Buffer = SteamOtp.bufferSecret(sharedSecret);
         const time: number = Math.floor((Date.now() / 1000) + this.steamTimeOffset);
         const buffer: Buffer = Buffer.allocUnsafe(8);
 
         buffer.writeUInt32BE(0, 0);
         buffer.writeUInt32BE(Math.floor(time / 30), 4);
 
-        const hmac: crypto.Hmac = crypto.createHmac('sha1', bufferedSecret);
+        const hmac: crypto.Hmac = crypto.createHmac('sha1', bufferedSharedSecret);
         let hmacBuffer: Buffer = hmac.update(buffer).digest();
         const start: number = hmacBuffer[19] & 0x0F;
 
