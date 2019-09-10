@@ -2,7 +2,7 @@
   "name": "steam-otp",
   "version": "1.1.0",
   "description": "Steam OTP",
-  "main": "main.js",
+  "main": "./dist/app.js",
   "scripts": {
     "start": "electron ."
   },
@@ -25,15 +25,13 @@
     "@types/mcustomscrollbar": "^2.8.32",
     "@types/node-fetch": "^2.5.0",
     "@types/promise.allsettled": "^1.0.1",
+    "bignumber.js": "^9.0.0",
     "dotenv": "^8.0.0",
     "jquery": "^3.4.1",
     "json-bigint": "^0.3.0",
-    "bignumber.js": "^9.0.0",
     "malihu-custom-scrollbar-plugin": "^3.1.5",
     "node-fetch": "^2.6.0",
     "promise.allsettled": "^1.0.1",
-    "steam-tradeoffer-manager": "^2.10.0",
-    "steam-user": "^4.12.3",
-    "steamcommunity": "^3.40.0"
+    "steam-user": "^4.12.4"
   }
 }

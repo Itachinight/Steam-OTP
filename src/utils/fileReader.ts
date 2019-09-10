@@ -1,29 +1,29 @@
 import * as fs from 'fs';
 import * as util from 'util';
-import * as path from 'path';
-import SteamOtp from './SteamOtp';
-import {AccountFileData} from "./index";
+import {format, join, ParsedPath} from 'path';
+import SteamOtp from '../Classes/SteamOtp';
+import MaFile from "../models/MaFile";
 
 const JsonBigInt = require('json-bigint')({"storeAsString": true});
 const readFile = util.promisify(fs.readFile);
 
-async function getDataFromDb(content: string, accountName: string=''): Promise<AccountFileData> {
+async function getDataFromDb(content: string, account_name: string): Promise<Partial<MaFile>> {
     const { shared_secret, identity_secret, device_id } = JSON.parse(content)._MobileAuthenticator;
     return {
-        account_name: accountName,
+        account_name,
         device_id,
         identity_secret,
         shared_secret,
     };
 }
 
-function getDataFromMaFile(content: string): AccountFileData {
+function getDataFromMaFile(content: string): Partial<MaFile> {
     return JsonBigInt.parse(content);
 }
 
-async function getLoginFromJson(filePath: path.ParsedPath): Promise<string> {
+async function getLoginFromJson(filePath: ParsedPath): Promise<string> {
     const { dir, name } = filePath;
-    const fullPath: string = path.format({
+    const fullPath: string = format({
         dir,
         name,
         ext: '.json'
@@ -37,25 +37,24 @@ async function getLoginFromJson(filePath: path.ParsedPath): Promise<string> {
     }
 }
 
-async function getSteam2FaFields(filePath: path.ParsedPath): Promise<AccountFileData> {
+async function getSteam2FaFields(filePath: ParsedPath): Promise<Partial<MaFile>> {
     filePath.ext = filePath.ext.toLowerCase();
+    if (!(filePath.ext === '.db' || filePath.ext === '.mafile')) throw new TypeError();
 
-    if (filePath.ext === '.db' || filePath.ext === '.mafile') {
-        const fullPath = path.join(filePath.dir, filePath.base);
-        const fileContent = await readFile(fullPath, 'UTF-8');
+    let maFile: Partial<MaFile>;
+    const fullPath = join(filePath.dir, filePath.base);
+    const fileContent = await readFile(fullPath, 'UTF-8');
 
-        if (filePath.ext === '.db') {
-            const login = await getLoginFromJson(filePath);
-            return await getDataFromDb(fileContent, login);
-        } else if (filePath.ext === '.mafile') {
-            return getDataFromMaFile(fileContent);
-        }
+    if (filePath.ext === '.db') {
+        const login = await getLoginFromJson(filePath);
+        maFile = await getDataFromDb(fileContent, login);
+    } else maFile = getDataFromMaFile(fileContent);
 
-    } else throw new TypeError();
+    return maFile;
 }
 
-export async function getDataFromFile(filePath: path.ParsedPath): Promise<AccountFileData> {
-    let accData;
+export async function getDataFromFile(filePath: ParsedPath): Promise<Partial<MaFile>> {
+    let accData: Partial<MaFile>;
 
     try {
         accData = await getSteam2FaFields(filePath);

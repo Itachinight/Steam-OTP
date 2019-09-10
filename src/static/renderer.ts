@@ -1,12 +1,13 @@
-import App from '../app/app';
-import * as helper from '../app/helper';
+import MainController from '../controllers/MainController';
+import * as helper from '../utils/asyncFunc';
 import * as AllSettled from 'promise.allsettled'
 import * as jQuery from 'jquery';
 import * as mCustomScrollbar from 'malihu-custom-scrollbar-plugin';
 import CustomScrollbarOptions = MCustomScrollbar.CustomScrollbarOptions;
-import {AccountAuthData, FullFilePath, WebKitDragEvent, WebKitFile} from "../app";
+import {AccountAuthData, FullFilePath} from "../types";
 import Event = JQuery.Event;
 import {ipcRenderer} from "electron";
+import MaFile from "../models/MaFile";
 
 jQuery(async ($) => {
     mCustomScrollbar($);
@@ -25,16 +26,16 @@ jQuery(async ($) => {
         }
     };
 
-    const app: App = await App.getInstance();
+    const app: MainController = await MainController.getInstance();
     $('#loader').fadeOut(600);
 
     async function toggleActiveFile($elem: JQuery) {
-        const fileName: string = $elem.attr('value');
+        const fileName: string = <string>$elem.attr('value');
         $filesSelector.find('li').removeClass('active-file');
         $elem.addClass('active-file');
 
         try {
-            const otp: AccountAuthData = await app.get2faFromFile(fileName);
+            const otp: AccountAuthData = await app.get2FaFromFile(fileName);
             renderOtp(otp);
         } catch (err) {
             console.error(err);
@@ -60,7 +61,7 @@ jQuery(async ($) => {
 
     async function updateFilesList(): Promise<void> {
         $filesSelector.mCustomScrollbar('destroy').empty();
-        const files: FullFilePath[] = await app.getConfigFiles();
+        const files: FullFilePath[] = await app.getConfigFilesList();
 
         if(files.length !== 0) {
             files.forEach(file => {
@@ -91,7 +92,7 @@ jQuery(async ($) => {
 
     function switchSection($link: JQuery): void {
         toggleActiveMenu($link);
-        toggleActiveSection($link.attr('href'));
+        toggleActiveSection(<string>$link.attr('href'));
     }
 
     function toggleActiveMenu($elem: JQuery): void {
@@ -184,8 +185,8 @@ jQuery(async ($) => {
     });
 
     $('#trades').on('click', () => {
-        console.log(app.accountData);
-        ipcRenderer.send("open-trades", app.accountData);
+        const maFile: MaFile = app.currentMaFile;
+        ipcRenderer.send("open-trades", maFile);
         // $('body').append(
         //     `<div class="modal-wrapper">
         //         <div class="auth-data">

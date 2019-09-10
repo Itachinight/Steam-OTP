@@ -12,9 +12,9 @@
   "status": 1,
   "fully_enrolled": true,
   "Session": {
-    "SessionID": "a143c1e7a1897c2a01d5d668",
-    "SteamLogin": "76561197962905144%7c%7c144855E835F6FAA735074B26DF0FB4884ED7FE6B",
-    "SteamLoginSecure": "76561197962905144%7C%7C054BFAB43BEFF50599B51C7C70F551A514EE6EA7",
+    "SessionID": null,
+    "SteamLogin": null,
+    "SteamLoginSecure": null,
     "WebCookie": null,
     "OAuthToken": null,
     "SteamID": 76561197962905144

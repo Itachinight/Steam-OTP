@@ -1,19 +1,19 @@
-import {AccountFileData} from "./index";
 import fetch, {Response} from "node-fetch";
-import SteamOtp from "./SteamOtp";
+import SteamOtp from "../Classes/SteamOtp";
+import MaFile from "../models/MaFile";
 
-export default class SteamTradeConf {
-    private readonly accountFileData: AccountFileData;
+export default class TradesController {
+    private readonly maFile: MaFile;
     private readonly cookies: string;
 
-    constructor(authInfo: AccountFileData) {
-        if (!SteamTradeConf.verifyAccountFileData(authInfo)) throw new Error('NO COOKIES');
-        this.accountFileData = authInfo;
+    constructor(maFile: MaFile) {
+        if (!TradesController.verifyAccountFileData(maFile)) throw new Error('NO COOKIES');
+        this.maFile = maFile;
         this.cookies = this.getCookies().join("; ");
     }
 
-    private static verifyAccountFileData(accountFileData: AccountFileData): boolean {
-        const {SessionID, SteamLogin, SteamLoginSecure, SteamID} = accountFileData.Session;
+    private static verifyAccountFileData(maFile: MaFile): boolean {
+        const {SessionID, SteamLogin, SteamLoginSecure, SteamID} = maFile.Session;
         return Boolean(SessionID && SteamLogin && SteamLoginSecure && SteamID);
     }
 
@@ -28,6 +28,7 @@ export default class SteamTradeConf {
             return await result.text();
         } catch (err) {
             console.log(err);
+            return "";
         }
     }
 
@@ -43,10 +44,11 @@ export default class SteamTradeConf {
             return json.html;
         } catch (err) {
             console.log(err);
+            return "";
         }
     }
 
-    public async handleTrade(tag: string, id: number, key: string): Promise<boolean> {
+    public async handleTrade(tag: "allow" | "cancel", id: number, key: string): Promise<boolean> {
         const baseUrl: string = "https://steamcommunity.com/mobileconf/ajaxop?";
         const qs: URLSearchParams = this.getQueryString(tag);
 
@@ -63,11 +65,12 @@ export default class SteamTradeConf {
             return json.success;
         } catch (err) {
             console.log(err);
+            return false;
         }
     }
 
     private getCookies(): string[] {
-        const {SessionID, SteamLogin, SteamLoginSecure} = this.accountFileData.Session;
+        const {SessionID, SteamLogin, SteamLoginSecure} = this.maFile.Session;
 
         return [
             "mobileClient=android;",
@@ -82,10 +85,10 @@ export default class SteamTradeConf {
         const qs: URLSearchParams = new URLSearchParams();
         const time: number = Math.floor(Date.now() / 1000);
 
-        qs.set("p", this.accountFileData.device_id);
-        qs.set("a", <string> this.accountFileData.Session.SteamID);
+        qs.set("p", this.maFile.device_id);
+        qs.set("a", <string> this.maFile.Session.SteamID);
         qs.set("t", String(time));
-        qs.set("k", SteamOtp.getConfirmationKey(this.accountFileData.identity_secret, time, tag));
+        qs.set("k", SteamOtp.getConfirmationKey(this.maFile.identity_secret, time, tag));
         qs.set("m", "android");
         qs.set("tag", tag);
 

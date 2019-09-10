@@ -1,11 +1,11 @@
 // Modules to control application life and create native browser window
-const {app, BrowserWindow, ipcMain} = require('electron');
+import {app, BrowserWindow, ipcMain} from 'electron';
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let mainWindow;
+let mainWindow: BrowserWindow | null;
 
-function createWindow() {
+async function createWindow() {
     // Create the browser window.
     mainWindow = new BrowserWindow({
         minWidth: 650,
@@ -23,7 +23,7 @@ function createWindow() {
     });
 
     // and load the index.html of the app.
-    mainWindow.loadFile('dist/static/index.html');
+    await mainWindow.loadFile('dist/static/index.html');
 
 
     //mainWindow.removeMenu();
@@ -52,17 +52,17 @@ app.on('window-all-closed',  () => {
     if (process.platform !== 'darwin') app.quit();
 });
 
-app.on('activate', () => {
+app.on('activate', async () => {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
-    if (mainWindow === null) createWindow();
+    if (mainWindow === null) await createWindow();
 });
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
 
-ipcMain.on("open-trades",(event, arg) => {
-    global.sharedObject = {accountData: arg};
+ipcMain.on("open-trades",async (event: any, args: any[]) => {
+    global.sharedObject = {maFile: args};
 
     const tradesWindow = new BrowserWindow({
         width: 450,
@@ -76,13 +76,12 @@ ipcMain.on("open-trades",(event, arg) => {
         frame: true,
         show: true,
         modal: true,
-        parent: mainWindow
+        parent: <BrowserWindow>mainWindow
     });
 
-    tradesWindow.loadFile('dist/static/trades.html');
+    await tradesWindow.loadFile('dist/static/trades.html');
 
     tradesWindow.once('ready-to-show', () => {
-        tradesWindow.webContents.openDevTools();
         tradesWindow.show();
     })
 });

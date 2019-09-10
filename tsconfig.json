@@ -1,10 +1,12 @@
 {
-  "compileOnSave": true,
+  "compileOnSave": false,
   "compilerOptions": {
     "module": "commonjs",
     "target": "ES2018",
     "sourceMap": false,
     "rootDir": "./src",
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "strict": true,
+    "removeComments": true
   }
 }

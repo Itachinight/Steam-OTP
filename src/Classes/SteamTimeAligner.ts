@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 import {RequestInit, RequestInfo, Response} from "node-fetch";
-import {SteamResponse} from "./index";
+import {AbortSignal} from "node-fetch/externals";
 
 export default class SteamTimeAligner {
     controller: AbortController;
@@ -9,7 +9,8 @@ export default class SteamTimeAligner {
 
     constructor() {
         this.controller = new AbortController();
-        const{ signal } = this.controller;
+        // @ts-ignore
+        const signal: AbortSignal = this.controller.signal;
         this.url = "https://api.steampowered.com/ITwoFactorService/QueryTime/v1/";
         this.params = {
             signal,
@@ -37,5 +38,5 @@ export default class SteamTimeAligner {
             console.error(err.message);
             return 0;
         }
-    };
+    }
 }

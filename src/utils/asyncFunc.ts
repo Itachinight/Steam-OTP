@@ -1,5 +1,3 @@
-import { AsyncFilterCallback, AsyncForEachCallback } from "./index";
-
 export async function asyncFilter(arr: any[], callback: AsyncFilterCallback): Promise<any> {
     const result: any[] = [];
 

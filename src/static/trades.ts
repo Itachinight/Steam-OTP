@@ -1,12 +1,13 @@
 import * as jQuery from 'jquery';
-import {AccountAuthData} from "../app";
-import SteamTradeConf from "../app/SteamTradeConf";
+import TradesController from "../controllers/TradesController";
+import MaFile from "../models/MaFile";
+import {remote} from "electron"
 
-let app: SteamTradeConf;
+let app: TradesController;
 
 try {
-    const accountData: AccountAuthData = require('electron').remote.getGlobal('sharedObject').accountData;
-    app = new SteamTradeConf(accountData);
+    const maFile: MaFile = remote.getGlobal("sharedObject").maFile;
+    app = new TradesController(maFile);
 
     jQuery(async $ => {
         const tradesPage: Promise<string> = app.getTrades();
@@ -17,27 +18,31 @@ try {
 
         $body.append(confirmations);
 
-        $(".mobileconf_list_entry").on("click", addConfButtons)
+        $(".mobileconf_list_entry").on("click", async (event: Event) => {
+            const $elem: JQuery<EventTarget> = $(<EventTarget> event.target);
+            const id: number = parseInt($elem.data('confid'));
+            const key: string = $elem.data('key');
+            const html: string = await app.getTradeDetails(id);
+
+            $("body > .responsive_page_frame").hide();
+            $("body").append(
+                html,
+                getMobileConfButtons(id, key)
+            );
+        })
     });
 } catch (err) {
     document.write(err);
     setTimeout(() => window.close(), 2000);
 }
 
-async function addConfButtons() {
-    const id: number = parseInt($(this).attr('data-confid'));
-    const key: string = $(this).attr('data-key');
-    const html: string = await app.getTradeDetails(id);
-    $("body > .responsive_page_frame").hide();
-    $("body").append(
-        html,
-        `<div id="mobileconf_buttons">
+function getMobileConfButtons(id: number, key: string): string {
+    return `<div id="mobileconf_buttons">
                 <div>
                     <div class="mobileconf_button mobileconf_button_cancel" onclick="declineTrade(${id}, ${key})">Cancel</div>
                     <div class="mobileconf_button mobileconf_button_accept" onclick="confirmTrade(${id}, ${key})">Accept</div>
                 </div>
             </div>`
-    );
 }
 
 async function declineTrade(id: number, key: string): Promise<void> {
