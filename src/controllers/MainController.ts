@@ -1,40 +1,49 @@
 import * as fs from "fs";
 import * as util from "util";
 import * as path from "path";
-import * as dotEnv from "dotenv";
-import SteamOtp from "../Classes/SteamOtp";
+import SteamOtp from "../classes/SteamOtp";
 import {getDataFromFile} from "../utils/fileReader";
-import { asyncFilter } from "../utils/asyncFunc";
-import SteamTimeAligner from "../Classes/SteamTimeAligner";
+import {asyncFilter} from "../utils/asyncFunc";
+import SteamTimeAligner from "../classes/SteamTimeAligner";
 import MaFile from "../models/MaFile";
 import {AccountAuthData, FullFilePath} from "../types";
+import {getCookies} from "../utils/steamAuth";
 
 const readDir = util.promisify(fs.readdir);
 
 export default class MainController {
 
-    public readonly steamTimeOffset: number;
-
     private static instance: MainController;
+
     private steamOtp: SteamOtp;
     private accountAuthData!: AccountAuthData;
     private readonly configDir: string;
 
     private constructor(offset: number) {
-        dotEnv.config();
-        this.steamTimeOffset = offset;
         this.configDir = <string>process.env.CONFIG_PATH;
-        this.steamOtp = new SteamOtp(this.steamTimeOffset);
+        this.steamOtp = new SteamOtp(offset);
     }
 
     public get currentMaFile(): MaFile {
         return this.accountAuthData.maFile;
     }
 
+    public get steamTimeOffset(): number {
+        return this.steamOtp.steamTimeOffset;
+    }
+
+    public async updateSession(login: string, password: string) {
+        this.currentMaFile.SessionCookies = await getCookies(login, password, this.accountAuthData.code);
+        await this.currentMaFile.save(this.configDir);
+    }
+
+    public static verifySharedSecret(sharedSecret?: string): boolean {
+        return SteamOtp.isSecretValid(sharedSecret);
+    }
+
     public static async getInstance(): Promise<MainController> {
-        if (void 0 === MainController.instance) {
-            const steamTimeAligner: SteamTimeAligner = new SteamTimeAligner();
-            MainController.instance = new MainController(await steamTimeAligner.getOffset());
+        if (!MainController.instance) {
+            MainController.instance = new MainController(await SteamTimeAligner.getOffset());
         }
 
         return MainController.instance;
@@ -61,7 +70,8 @@ export default class MainController {
     };
 
     public refresh2Fa(): AccountAuthData {
-        this.accountAuthData.code = this.steamOtp.getAuthCode(this.accountAuthData.maFile.shared_secret);
+        this.accountAuthData.code = this.steamOtp.getAuthCode(this.currentMaFile.shared_secret);
+
         return this.accountAuthData;
     };
 

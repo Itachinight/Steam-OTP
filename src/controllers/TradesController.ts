@@ -1,6 +1,7 @@
 import fetch, {Response} from "node-fetch";
-import SteamOtp from "../Classes/SteamOtp";
+import SteamOtp from "../classes/SteamOtp";
 import MaFile from "../models/MaFile";
+import BigNumber from "bignumber.js";
 
 export default class TradesController {
     private readonly maFile: MaFile;
@@ -13,8 +14,8 @@ export default class TradesController {
     }
 
     private static verifyAccountFileData(maFile: MaFile): boolean {
-        const {SessionID, SteamLogin, SteamLoginSecure, SteamID} = maFile.Session;
-        return Boolean(SessionID && SteamLogin && SteamLoginSecure && SteamID);
+        const {SessionID, SteamLoginSecure, SteamID} = maFile.Session;
+        return Boolean(SessionID && SteamLoginSecure && SteamID);
     }
 
     public async getTrades(): Promise<string> {
@@ -70,13 +71,12 @@ export default class TradesController {
     }
 
     private getCookies(): string[] {
-        const {SessionID, SteamLogin, SteamLoginSecure} = this.maFile.Session;
+        const {SessionID, SteamLoginSecure} = this.maFile.Session;
 
         return [
-            "mobileClient=android;",
-            "Steam_Language=english;",
+            "mobileClient=android",
+            "Steam_Language=english",
             `sessionid=${SessionID}`,
-            `steamLogin=${SteamLogin}`,
             `steamLoginSecure=${SteamLoginSecure}`,
         ];
     }
@@ -84,13 +84,18 @@ export default class TradesController {
     private getQueryString(tag: string): URLSearchParams {
         const qs: URLSearchParams = new URLSearchParams();
         const time: number = Math.floor(Date.now() / 1000);
+        const steamId = new BigNumber({...this.maFile.Session.SteamID, _isBigNumber: true});
+
+        console.log(SteamOtp.getConfirmationKey(this.maFile.identity_secret, time, tag));
 
         qs.set("p", this.maFile.device_id);
-        qs.set("a", <string> this.maFile.Session.SteamID);
+        qs.set("a", steamId.toString(10));
         qs.set("t", String(time));
         qs.set("k", SteamOtp.getConfirmationKey(this.maFile.identity_secret, time, tag));
         qs.set("m", "android");
         qs.set("tag", tag);
+
+        console.log(qs.toString());
 
         return qs;
     }

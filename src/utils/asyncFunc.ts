@@ -7,9 +7,3 @@ export async function asyncFilter(arr: any[], callback: AsyncFilterCallback): Pr
 
     return result;
 }
-
-export async function asyncForEach(arr: any[], callback: AsyncForEachCallback): Promise<void> {
-    for (let i: number = 0; i < arr.length; i++) {
-        await callback(arr[i], i, arr);
-    }
-}

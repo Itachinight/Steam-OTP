@@ -3,21 +3,13 @@ import {getDataFromFile} from "../utils/fileReader";
 import * as util from "util";
 import * as fs from "fs";
 import BigNumber from "bignumber.js";
+import {Session, SteamCookies} from "../types";
 
-const JsonBigInt = require("json-bigint")({"storeAsString": true});
+const JsonBigInt = require("json-bigint")();
 const writeFile = util.promisify(fs.writeFile);
 
-interface Session {
-    SessionID?: string,
-    SteamLogin?: string,
-    SteamLoginSecure?: string,
-    WebCookie?: string,
-    OAuthToken?: string,
-    SteamID: BigNumber | string,
-}
-
 export default class MaFile {
-    public path!: string;
+    public path: string = "";
     public shared_secret: string = "";
     public device_id: string = "";
     public identity_secret: string = "";
@@ -46,7 +38,14 @@ export default class MaFile {
         const parsedPath: ParsedPath = parse(path);
         const accountData: Partial<MaFile> = await getDataFromFile(parsedPath);
 
-        return MaFile.assign(maFile, accountData, {path});
+        try {
+            maFile.path = path;
+            MaFile.assign(maFile, accountData)
+        } catch (err) {
+            console.log(err);
+        }
+
+        return maFile;
     }
 
     public static getFromSharedSecret(shared_secret: string): MaFile {
@@ -55,8 +54,24 @@ export default class MaFile {
         return MaFile.assign(maFile, {shared_secret});
     }
 
-    public static assign(maFile: MaFile, ...partialMaFile: Partial<MaFile>[]): MaFile {
-        return Object.assign(maFile, ...partialMaFile);
+    set SessionCookies(cookies: SteamCookies) {
+        this.Session = {...this.Session, ...cookies};
+    }
+
+    public static assign(maFile: MaFile, partialMaFile: Partial<MaFile>): MaFile {
+        if (partialMaFile.Session) {
+            const {Session} = partialMaFile;
+
+            for (const elem in Session) {
+                if (Session.hasOwnProperty(elem) && !maFile.Session.hasOwnProperty(elem)) delete Session[<keyof Session> elem];
+            }
+        }
+
+        for (const elem in partialMaFile) {
+            if (partialMaFile.hasOwnProperty(elem) && !maFile.hasOwnProperty(elem)) delete partialMaFile[<keyof MaFile> elem];
+        }
+
+        return Object.assign(maFile, partialMaFile);
     }
 
     public async save(dir: string): Promise<void> {
@@ -68,17 +83,14 @@ export default class MaFile {
             ext: ".maFile"
         });
 
-        if (typeof this.Session.SteamID === "string") {
-            this.Session.SteamID = new BigNumber(this.Session.SteamID);
-        }
-
         const jsonString: string = JsonBigInt.stringify(fields, function(this: any, key: string, value: any) {
             return value ? value : null;
         }, 2);
 
-        await writeFile(outputPath, jsonString, {
-            encoding: "UTF-8",
-            flag: "w",
-        });
+        try {
+            await writeFile(outputPath, jsonString);
+        } catch (err) {
+            throw new Error(`An Error occurred while saving ${parsedPath.name}.maFile.\r\n Check your accounts directory files permission`);
+        }
     }
 }

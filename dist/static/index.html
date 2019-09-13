@@ -4,12 +4,27 @@
     <meta charset="UTF-8">
     <title>Steam OTP</title>
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/mCustomScrollbarMinimalDark.css">
+    <link rel="stylesheet" href="css/mCustomScrollbarMinimal.css">
+    <link rel="stylesheet" href="css/loader.css">
 </head>
 <script>
-    const exports = {};
+    global.exports = {};
 </script>
 <body>
+<div id="frame">
+    <img id="steam-logo" src="img/steam_logo.png" alt="steam-logo">
+    <div id="window-control">
+        <button id="minimize-btn" class="control-btn">
+            <img src="img/minimize.png" alt="minify">
+        </button>
+        <button id="expand-btn" class="control-btn" disabled>
+            <img src="img/expand.png" alt="expand">
+        </button>
+        <button id="close-btn" class="control-btn">
+            <img src="img/close.png" alt="close">
+        </button>
+    </div>
+</div>
 <header>
     <ul id="nav">
         <li>
@@ -27,7 +42,7 @@
 <main>
     <section id="from-secret">
         <label>
-            Submit Your Shared Secret String To Get OTP
+            Submit Your Shared Secret
             <input type="text" id="secret">
         </label>
     </section>
@@ -39,11 +54,8 @@
     <section class="active visible" id="from-config-dir">
         <p>Select Your Account</p>
         <ul id="files">
-        </ul>
 
-        <button id="trades" style="margin-top: 70px; border: 1px solid red">
-            Open Trades
-        </button>
+        </ul>
     </section>
 </main>
 
@@ -60,9 +72,45 @@
 </div>
 
 <footer>dev by <a href="https://t.me/ItachiNight" target="_blank">@ItachiNight</a></footer>
-<div id="loader">
-    <div class="lds-grid"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+
+<div id="loader" class="view">
+    <div class="plane main">
+        <div class="circle"></div>
+        <div class="circle"></div>
+        <div class="circle"></div>
+        <div class="circle"></div>
+        <div class="circle"></div>
+        <div class="circle"></div>
+    </div>
 </div>
+
+<div id="modal-wrapper">
+    <div class="auth-data">
+        <label>
+            Login
+            <input id="login">
+        </label>
+        <label>
+            Password
+            <input id="password">
+        </label>
+        <button type="submit" id="send">
+            Send
+        </button>
+    </div>
+</div>
+
+<nav id="context-menu">
+    <div id="trades">
+        Open Trades
+    </div>
+    <div id="session">
+        Refresh Session
+    </div>
+    <div id="delete">
+        Delete File
+    </div>
+</nav>
 
 <script src="renderer.js"></script>
 </body>

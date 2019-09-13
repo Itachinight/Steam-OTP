@@ -6,9 +6,12 @@ body {
     flex-direction: column;
     justify-content: space-between;
     height: 100vh;
+    overflow: hidden;
+    color: #ffffffe6;
 }
 
-.modal-wrapper {
+#modal-wrapper {
+    display: none;
     position: fixed;
     top: 0;
     left: 0;
@@ -16,31 +19,56 @@ body {
     height: 100vh;
     justify-content: center;
     align-items: center;
-    display: flex;
-    background-color: #1b1a1a7a;
+    background-color: #121212;
+    z-index: 1;
 }
 
 .auth-data {
-    width: 500px;
-    height: 180px;
-    background: white;
-    border-radius: 20px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-evenly;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    position: relative;
+    width: 90%;
+    background: linear-gradient(0deg, #1518259e, #1c2133);
+    border-radius: 5px;
+    padding: 5px 0;
+}
+
+.auth-data button {
+    display: block;
+    margin: 0 auto 15px;
+    width: 150px;
+    height: 32px;
+    border-radius: 5px;
+    border: none;
+    outline: none;
+    background: #61aeff52;
+    color: #ffffffe6;
+    text-transform: uppercase;
+    font-size: 18px;
+    letter-spacing: 1.5px;
 }
 
 .auth-data label {
+    font-size: 20px;
     display: flex;
     align-items: center;
     flex-direction: column;
+    margin: 30px 0;
 }
 
 .auth-data label input {
-    width: 80%;
+    margin-top: 10px;
+    width: 75%;
+    border: none;
+    border-radius: 5px;
+    outline: none;
+    height: 24px;
+    font-size: 16px;
+    padding: 4px 8px;
 }
 
-body,ul,li,p {
+body, ul, li, p {
     margin: 0;
     padding: 0;
 }
@@ -52,32 +80,28 @@ a {
 }
 
 header {
-    background-color: #140f23;
-    -webkit-app-region: drag;
+    background-color: #111115;
     user-select: none;
 }
 
 header > ul {
     display: flex;
-    height: 80px;
+    height: 70px;
+    justify-content: space-evenly;
 }
 
 header > ul > li {
     list-style: none;
-    flex-grow: 1;
-    height: 80px;
+    height: 50px;
     display: flex;
-    justify-content: center;
     align-items: center;
-
 }
 
 header > ul > li > a {
     color: white;
     text-decoration: none;
     font-size: 16px;
-    letter-spacing: 0.5px;
-    transition: transform 600ms;
+    transition: transform 400ms;
     -webkit-app-region: no-drag;
     cursor: pointer;
 }
@@ -117,37 +141,46 @@ section.active.visible {
 
 #from-config-dir p, label {
     text-align: center;
-    font-size: 20px;
+    font-size: 36px;
     user-select: none;
 }
 
 #secret {
     display: block;
-    margin: 10px auto 0;
-    width: 400px;
-    height: 20px;
-    font-size: 18px;
-    border-radius: 15px;
+    margin: 30px auto 0;
+    width: 85%;
+    height: 22px;
+    font-size: 20px;
+    border-radius: 8px;
+    border: 3px solid transparent;
     padding: 5px 6px;
-    border: none;
     outline: none;
     text-align: center;
+    transition: border 400ms linear;
+}
+
+#secret.invalid {
+    border-color: #c50403e8;
+}
+
+#secret.valid {
+    border-color: #1c7918e3;
 }
 
 #from-config-dir {
     flex-direction: column;
+    justify-content: space-evenly;
 }
 
 #files {
     list-style: none;
     width: 80%;
-    max-height: 250px;
-    min-height: 30px;
+    max-height: 370px;
+    min-height: 185px;
     text-align: center;
     box-sizing: border-box;
     font-size: 20px;
-    border: 2px solid grey;
-    background: white;
+    background: #ffffff12;
     margin: 20px 0 0;
     outline: none;
     padding: 0;
@@ -159,18 +192,19 @@ section.active.visible {
 }
 
 #files li {
-    padding: 3px 0;
+    color: #ffffffcf;
+    padding: 5px 0;
     cursor: pointer;
     user-select: none;
 }
 
 #files li:hover {
-    background: lightblue;
+    background: #ffffff14;
 }
 
 #files li.active-file {
-    background: lightskyblue;
-    pointer-events: none;
+    background: #ffffff40;
+    cursor: default;
 }
 
 #from-file {
@@ -178,13 +212,13 @@ section.active.visible {
     border: 4px solid transparent;
     transition: border 200ms ease,
                 opacity linear 400ms;
-    color: black;
+    color: white;
     font-size: 32px;
 }
 
 #from-file.file-over {
-    border: 4px solid #140f23;
-    background: #c2ceef;
+    border: 3px solid #ffffff40;
+    background: #ffffff12;
 }
 
 #otp {
@@ -192,16 +226,17 @@ section.active.visible {
     letter-spacing: 3px;
     font-size: 40px;
     margin: 20px auto 15px;
-    color: mediumvioletred;
-    border: 2px solid #000000b8;
+    color: #ffffffe6;
+    border: 2px solid #ffffff99;
     border-radius: 30px;
     width: 190px;
     user-select: none;
     transition: 300ms;
+    z-index: 2;
 }
 
 #otp.copied {
-    animation-duration: 500ms;
+    animation-duration: 400ms;
     animation-name: copy-effect;
     animation-iteration-count: 1;
 }
@@ -212,7 +247,7 @@ section.active.visible {
     }
 
     33% {
-        background: #9cb4d5;
+        background: #ffffff40;
     }
 
     to {
@@ -221,13 +256,17 @@ section.active.visible {
 }
 
 #err {
-    color: red;
-    text-align: center;
-    font-size: 26px;
+    /*height: 140px;*/
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    font-size: 24px;
 }
 
 #err p {
     display: none;
+    text-align: left;
+    width: 70%;
 }
 
 #progress {
@@ -236,10 +275,11 @@ section.active.visible {
     border-radius: 5px;
     width: 500px;
     margin: 0 auto 20px;
+    z-index: 2;
 }
 
 #progress > div {
-    background: red;
+    background: #c50403e8;
     width: 0;
     height: 100%;
     border-radius: 5px;
@@ -247,103 +287,93 @@ section.active.visible {
 }
 
 footer {
-    background: #140f23;
+    background: #111115;
     color: white;
     text-align: center;
     font-size: 15px;
     padding: 8px 0;
-    -webkit-app-region: drag;
     user-select: none;
+    z-index: 2;
 }
 
 footer a {
     color: white;
     text-decoration: none;
-    -webkit-app-region: no-drag;
 }
 
 footer a:hover {
     color: lightskyblue;
 }
 
-/* Preload Animation*/
-#loader {
+#context-menu {
+    width: 180px;
+    background: #121212;
     position: absolute;
-    height: 100vh;
-    width: 100vw;
-    background-color: #8fa0cd;
-    z-index: 1;
+    z-index: 99;
+    visibility: hidden;
+}
+
+#context-menu > div {
+    padding: 10px 15px;
+}
+
+#context-menu > div:hover {
+    background: #ffffff24;
+    cursor: pointer;
+}
+
+#frame {
+    background-color: #111115;
+    display: flex;
+    justify-content: space-between;
+    user-select: none;
+    -webkit-app-region: drag;
+    z-index: 99;
+}
+
+#steam-logo {
+    margin: 5px 0 0 5px;
+    height: 20px;
+    width: 20px;
+    opacity: 0.8;
+    display: block
+}
+
+#window-control {
+    -webkit-app-region: no-drag;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.control-btn {
+    height: 26px;
+    width: 36px;
     display: flex;
     justify-content: center;
     align-items: center;
+    background-color: transparent;
+    outline: none;
+    border: none;
 }
 
-.lds-grid {
-    transform: scale(3);
-    opacity: 0.5;
-    display: inline-block;
-    position: relative;
-    width: 64px;
-    height: 64px;
+.control-btn:focus {
+    opacity: 0.75;
 }
-.lds-grid div {
-    position: absolute;
-    width: 13px;
-    height: 13px;
-    border-radius: 50%;
-    background: #dcdcdc;
-    animation: lds-grid 1.2s linear infinite;
+
+.control-btn img {
+    height: 16px;
+    width: 16px;
+    -webkit-user-drag: none;
 }
-.lds-grid div:nth-child(1) {
-    top: 6px;
-    left: 6px;
-    animation-delay: 0s;
+
+#minimize-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
 }
-.lds-grid div:nth-child(2) {
-    top: 6px;
-    left: 26px;
-    animation-delay: -0.4s;
+
+#expand-btn {
+    opacity: 0.4;
 }
-.lds-grid div:nth-child(3) {
-    top: 6px;
-    left: 45px;
-    animation-delay: -0.8s;
-}
-.lds-grid div:nth-child(4) {
-    top: 26px;
-    left: 6px;
-    animation-delay: -0.4s;
-}
-.lds-grid div:nth-child(5) {
-    top: 26px;
-    left: 26px;
-    animation-delay: -0.8s;
-}
-.lds-grid div:nth-child(6) {
-    top: 26px;
-    left: 45px;
-    animation-delay: -1.2s;
-}
-.lds-grid div:nth-child(7) {
-    top: 45px;
-    left: 6px;
-    animation-delay: -0.8s;
-}
-.lds-grid div:nth-child(8) {
-    top: 45px;
-    left: 26px;
-    animation-delay: -1.2s;
-}
-.lds-grid div:nth-child(9) {
-    top: 45px;
-    left: 45px;
-    animation-delay: -1.6s;
-}
-@keyframes lds-grid {
-    0%, 100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.5;
-    }
+
+#close-btn:hover {
+    background: #cb0000;
 }

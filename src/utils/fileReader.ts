@@ -1,10 +1,10 @@
 import * as fs from 'fs';
 import * as util from 'util';
 import {format, join, ParsedPath} from 'path';
-import SteamOtp from '../Classes/SteamOtp';
+import SteamOtp from '../classes/SteamOtp';
 import MaFile from "../models/MaFile";
 
-const JsonBigInt = require('json-bigint')({"storeAsString": true});
+const JsonBigInt = require('json-bigint')();
 const readFile = util.promisify(fs.readFile);
 
 async function getDataFromDb(content: string, account_name: string): Promise<Partial<MaFile>> {

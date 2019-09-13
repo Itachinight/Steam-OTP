@@ -1,5 +1,4 @@
 import MainController from '../controllers/MainController';
-import * as helper from '../utils/asyncFunc';
 import * as AllSettled from 'promise.allsettled'
 import * as jQuery from 'jquery';
 import * as mCustomScrollbar from 'malihu-custom-scrollbar-plugin';
@@ -8,53 +7,68 @@ import {AccountAuthData, FullFilePath} from "../types";
 import Event = JQuery.Event;
 import {ipcRenderer} from "electron";
 import MaFile from "../models/MaFile";
+import {PromiseResult} from "promise.allsettled";
+import ClickEvent = JQuery.ClickEvent;
 
 jQuery(async ($) => {
+    const app: MainController = await MainController.getInstance();
+
     mCustomScrollbar($);
-    const $filesSelector: JQuery = $('#files');
-    const $otp: JQuery = $('#otp p');
-    const $err: JQuery = $('#err p');
-    const $secret: JQuery = $('#secret');
-    const $drop: JQuery = $('#from-file');
-    const $progress: JQuery = $('#progress > div');
+    const $body = $('body');
+    const $filesSelector: JQuery<Element> = $('#files');
+    const $otp: JQuery<Element> = $('#otp p');
+    const $err: JQuery<Element> = $('#err p');
+    const $dropZone: JQuery<Element> = $('#from-file');
+    const $progressBar: JQuery<Element> = $('#progress > div');
+    const $secret: JQuery<HTMLInputElement> = $('#secret');
+    const $loginInput: JQuery<HTMLInputElement> = $('#login');
+    const $passwordInput: JQuery<HTMLInputElement> = $('#password');
+    const $modalWrapper: JQuery<Element> = $('#modal-wrapper');
+
     const scrollBarOpts: CustomScrollbarOptions = {
-        theme: 'minimal-dark',
+        theme: "minimal",
         scrollInertia: 350,
         mouseWheel: {
             preventDefault: true,
-            scrollAmount: 150,
+            scrollAmount: 200,
         }
     };
 
-    const app: MainController = await MainController.getInstance();
-    $('#loader').fadeOut(600);
-
-    async function toggleActiveFile($elem: JQuery) {
-        const fileName: string = <string>$elem.attr('value');
-        $filesSelector.find('li').removeClass('active-file');
+    async function toggleActiveFile($elem: JQuery<Element>) {
+        const fullPath: string = <string> $elem.data('fullPath');
+        $filesSelector.find('li.active-file').removeClass('active-file');
         $elem.addClass('active-file');
 
         try {
-            const otp: AccountAuthData = await app.get2FaFromFile(fileName);
+            const otp: AccountAuthData = await app.get2FaFromFile(fullPath);
+            $loginInput.val(otp.maFile.account_name);
+            $passwordInput.val('');
             renderOtp(otp);
         } catch (err) {
             console.error(err);
-            await renderError(new Error('File Is Not Available. Account List Refreshed'));
+            renderMessage('Some Files Are Not Available. Account List Refreshed');
             await updateFilesList();
         }
     }
 
     async function uploadFiles(files: WebKitFile[]) {
-        const results = await AllSettled(files.map(async file => await app.saveToConfig(file.path)));
+        const results: PromiseResult<Promise<void>, unknown>[] = await AllSettled(files.map(file => app.saveToConfig(file.path)));
+        let countSuccessfulFiles: number = 0;
 
-        await helper.asyncForEach(results,async function(result) {
+        if (results.length === 1) {
+            const result: PromiseResult<Promise<void>, unknown> = results[0];
             if (result.status === 'rejected') {
-                let message: string = result.reason;
-                if (message !== $err.text()) {
-                    await renderError(new Error(message));
-                }
-            }
-        });
+                const {message} = <Error> result.reason;
+                renderMessage(message);
+            } else renderMessage('File was successfully saved');
+        } else {
+            results.forEach((result: PromiseResult<Promise<void>, unknown>) => {
+                if (result.status === 'rejected') return;
+                countSuccessfulFiles++;
+            });
+
+            renderMessage(`${countSuccessfulFiles} of ${results.length} files were successfully saved`);
+        }
 
         await updateFilesList();
     }
@@ -65,7 +79,7 @@ jQuery(async ($) => {
 
         if(files.length !== 0) {
             files.forEach(file => {
-                $filesSelector.append(`<li value="${file.fullPath}">${file.base}</li>`);
+                $filesSelector.append(`<li data-full-path="${file.fullPath}">${file.base}</li>`);
             });
 
             $filesSelector.mCustomScrollbar(scrollBarOpts);
@@ -79,14 +93,9 @@ jQuery(async ($) => {
         $otp.fadeOut(125, () => $otp.text(code)).fadeIn(125);
     }
 
-    function renderError(err: Error) {
-        console.error(err);
-        const { message } = err;
-        return new Promise(resolve => {
-            $err.text(message).fadeIn(750, () => {
-                setTimeout(() => $err.fadeOut(500, () => $err.empty()), 2500)
-            });
-            resolve(message);
+    function renderMessage(message: string) {
+        $err.text(message).fadeIn(750, () => {
+            setTimeout(() => $err.fadeOut(500, () => $err.empty()), 2500)
         });
     }
 
@@ -109,12 +118,12 @@ jQuery(async ($) => {
         setTimeout(() => $elem.addClass('visible'), 20);
     }
 
-    (function updateOtp(): void {
+    (function updateOtp($progressBar: JQuery<Element>): void {
         setInterval(() => {
             const time: number = Math.round(Date.now() / 1000) + app.steamTimeOffset;
             const count: number = time % 30;
 
-            $progress.css('width', `${Math.round(100 / 29 * count)}%`);
+            $progressBar.css('width', `${Math.round(100 / 29 * count)}%`);
 
             if (count === 1) {
                 (function reload(): void {
@@ -129,28 +138,30 @@ jQuery(async ($) => {
                 }());
             }
         }, 1000);
-    }());
+    }($progressBar));
 
     await updateFilesList();
 
+    $('#loader').fadeOut(1000);
+
     // Events //
 
-    $('body').on('dragenter', () => {
+    $body.on('dragenter', () => {
         switchSection($('#nav li:nth-of-type(2) a'));
     });
 
-    $drop
+    $dropZone
         .on('dragover', function(event: Event) {
             event.preventDefault();
-            $drop.addClass('file-over');
+            $dropZone.addClass('file-over');
         })
         .on('dragleave',function(event: Event) {
             event.preventDefault();
-            $drop.removeClass('file-over');
+            $dropZone.removeClass('file-over');
         })
         .on('drop', async function (event: any) {
             event.preventDefault();
-            $drop.removeClass('file-over');
+            $dropZone.removeClass('file-over');
 
             const originalEvent: WebKitDragEvent = event.originalEvent;
             const files: WebKitFile[] = Object.values(originalEvent.dataTransfer.files);
@@ -166,53 +177,88 @@ jQuery(async ($) => {
         switchSection($link);
     });
 
-    $filesSelector.on('click', 'li', async function() {
-        await toggleActiveFile($(this));
+    $body.on('click contextmenu dblclick', $body.not($('li.active-file')), () => {
+        $('#context-menu').css('visibility', 'hidden');
     });
 
-    $secret.on('keydown', function (event) {
-        if (event.key === 'Enter') {
-            const secret: string = <string>$(this).val();
 
-            try {
-                const otp: AccountAuthData = app.get2FaFromSecret(secret);
-                $filesSelector.find('li').removeClass('active-file');
-                renderOtp(otp);
-            } catch (err) {
-                renderError(err);
+    $filesSelector
+        .on('click', 'li', async function () {
+            const $elem: JQuery = $(this);
+            if (!$elem.hasClass('active-file')) await toggleActiveFile($elem);
+        })
+        .on('contextmenu', 'li.active-file', function (event: Event) {
+            event.stopPropagation();
+            const clientX: number = <number> event.clientX;
+            const x: number = document.documentElement.clientWidth - clientX > 120 ? clientX : clientX - 180;
+            const y: number = <number> event.clientY;
+            const $contextMenu = $('#context-menu');
+
+            $contextMenu
+                .css('visibility', 'visible')
+                .css('top', `${y}px`)
+                .css('left', `${x}px`);
+        });
+
+    $secret
+        .on("keydown", function (event: Event) {
+            if (event.key === "Enter" && $secret.hasClass("valid")) {
+                const secret: string = <string> $(this).val();
+
+                try {
+                    const otp: AccountAuthData = app.get2FaFromSecret(secret);
+                    $filesSelector.find('li.active-file').removeClass('active-file');
+                    renderOtp(otp);
+                } catch (err) {
+                    renderMessage(err.message);
+                }
             }
-        }
-    });
+        })
+        .on("input", () => {
+            if (MainController.verifySharedSecret(<string> $secret.val())) {
+                $secret.removeClass("invalid").addClass("valid");
+            } else {
+                $secret.removeClass("valid").addClass("invalid");
+            }
+        });
+
+
+    $('.auth-data').on('click', (event: ClickEvent) => event.stopPropagation());
+    $('#session').on('click', () => $modalWrapper.fadeIn(350));
+    $modalWrapper.on('click', () => $modalWrapper.fadeOut(350));
 
     $('#trades').on('click', () => {
         const maFile: MaFile = app.currentMaFile;
         ipcRenderer.send("open-trades", maFile);
-        // $('body').append(
-        //     `<div class="modal-wrapper">
-        //         <div class="auth-data">
-        //             <label>
-        //                 Login
-        //                 <input id="login">
-        //             </label>
-        //             <label>
-        //                 Password
-        //                 <input id="password">
-        //             </label>
-        //             <input type="submit" value="Send" id="auth">
-        //         </div>
-        //     </div>`
-        // );
-        $("#auth").on('click', () => {
-        });
+    });
+
+    $('#send').on('click', async () => {
+        const login: string = <string> $loginInput.val();
+        const password: string = <string> $passwordInput.val();
+
+        $modalWrapper.fadeOut(450);
+        await app.updateSession(login, password);
     });
 
     $otp.on('click', () => {
-        const $wrapper: JQuery = $otp.parent();
+        const $wrapper: JQuery<Element> = $otp.parent();
         const otp: string = $otp.text();
+
+        navigator.clipboard.writeText(otp);
 
         $wrapper.removeClass('copied');
         setTimeout(() => $wrapper.addClass('copied'),20);
-
-        navigator.clipboard.writeText(otp);
     });
+
+    const $close = $('#close-btn');
+    const $minimize = $('#minimize-btn');
+
+    $close
+        .on('mouseleave mouseup', () => $close.blur())
+        .on('click', () => window.close());
+
+    $minimize
+        .on('mouseleave mouseup', () => $minimize.blur())
+        .on('click', () => ipcRenderer.send('main-minimize'));
+
 });

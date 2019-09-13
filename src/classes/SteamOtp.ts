@@ -10,13 +10,15 @@ export default class SteamOtp {
     }
 
     public static isSecretValid(secret?: string): boolean {
-        return Boolean(secret && /^[a-z0-9+\\\/=]{28}$/i.test(secret));
+        return Boolean(secret && /^[a-z0-9+\/=]{28}$/i.test(secret));
     }
 
     public static bufferSecret(secret: string): Buffer {
-        if (SteamOtp.isSecretValid(secret)) {
-            return Buffer.from(secret, "base64");
-        } else throw new Error("Wrong Secret Given");
+        if (!SteamOtp.isSecretValid(secret)) {
+            throw new Error("Wrong Secret Given");
+        }
+
+        return Buffer.from(secret, "base64");
     }
 
 

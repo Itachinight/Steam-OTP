@@ -29,7 +29,3 @@ interface SharedObject {
 interface AsyncFilterCallback {
     (item: any): Promise<boolean>
 }
-
-interface AsyncForEachCallback {
-    (currentValue: any, index?: number, array?: any[]): Promise<void>
-}
