@@ -81,7 +81,7 @@ jQuery(async ($) => {
     }
     function renderMessage(message) {
         $err.text(message).fadeIn(750, () => {
-            setTimeout(() => $err.fadeOut(500, () => $err.empty()), 2500);
+            setTimeout(() => $err.fadeOut(500, () => $err.empty()), 2000);
         });
     }
     function switchSection($link) {
@@ -120,7 +120,7 @@ jQuery(async ($) => {
         }, 1000);
     }($progressBar));
     await updateFilesList();
-    $('#loader').fadeOut(1000);
+    $('#loader').fadeOut(700);
     $body.on('dragenter', () => {
         switchSection($('#nav li:nth-of-type(2) a'));
     });
@@ -156,7 +156,14 @@ jQuery(async ($) => {
         if (!$elem.hasClass('active-file'))
             await toggleActiveFile($elem);
     })
-        .on('contextmenu', 'li.active-file', function (event) {
+        .on('contextmenu', 'li', async function (event) {
+        const $elem = $(this);
+        if (!$elem.hasClass('active-file'))
+            await toggleActiveFile($elem);
+        showContextMenu(event);
+    })
+        .on('contextmenu', 'li.active-file', showContextMenu);
+    function showContextMenu(event) {
         event.stopPropagation();
         const clientX = event.clientX;
         const x = document.documentElement.clientWidth - clientX > 120 ? clientX : clientX - 180;
@@ -166,7 +173,7 @@ jQuery(async ($) => {
             .css('visibility', 'visible')
             .css('top', `${y}px`)
             .css('left', `${x}px`);
-    });
+    }
     $secret
         .on("keydown", function (event) {
         if (event.key === "Enter" && $secret.hasClass("valid")) {

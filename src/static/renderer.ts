@@ -95,7 +95,7 @@ jQuery(async ($) => {
 
     function renderMessage(message: string) {
         $err.text(message).fadeIn(750, () => {
-            setTimeout(() => $err.fadeOut(500, () => $err.empty()), 2500)
+            setTimeout(() => $err.fadeOut(500, () => $err.empty()), 2000)
         });
     }
 
@@ -142,7 +142,7 @@ jQuery(async ($) => {
 
     await updateFilesList();
 
-    $('#loader').fadeOut(1000);
+    $('#loader').fadeOut(700);
 
     // Events //
 
@@ -187,18 +187,25 @@ jQuery(async ($) => {
             const $elem: JQuery = $(this);
             if (!$elem.hasClass('active-file')) await toggleActiveFile($elem);
         })
-        .on('contextmenu', 'li.active-file', function (event: Event) {
-            event.stopPropagation();
-            const clientX: number = <number> event.clientX;
-            const x: number = document.documentElement.clientWidth - clientX > 120 ? clientX : clientX - 180;
-            const y: number = <number> event.clientY;
-            const $contextMenu = $('#context-menu');
+        .on('contextmenu', 'li', async function (event: Event) {
+            const $elem: JQuery = $(this);
+            if (!$elem.hasClass('active-file')) await toggleActiveFile($elem);
+            showContextMenu(event);
+        })
+        .on('contextmenu', 'li.active-file', showContextMenu);
 
-            $contextMenu
-                .css('visibility', 'visible')
-                .css('top', `${y}px`)
-                .css('left', `${x}px`);
-        });
+    function showContextMenu(event: Event) {
+        event.stopPropagation();
+        const clientX: number = <number> event.clientX;
+        const x: number = document.documentElement.clientWidth - clientX > 120 ? clientX : clientX - 180;
+        const y: number = <number> event.clientY;
+        const $contextMenu = $('#context-menu');
+
+        $contextMenu
+            .css('visibility', 'visible')
+            .css('top', `${y}px`)
+            .css('left', `${x}px`);
+    }
 
     $secret
         .on("keydown", function (event: Event) {

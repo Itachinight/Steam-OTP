@@ -18,10 +18,11 @@ try {
 
         $body.append(confirmations);
 
-        $(".mobileconf_list_entry").on("click", async (event: Event) => {
-            const $elem: JQuery<EventTarget> = $(<EventTarget> event.target);
+        $(".mobileconf_list_entry").on("click", async function() {
+            const $elem: JQuery<EventTarget> = $(this);
             const id: number = parseInt($elem.data('confid'));
             const key: string = $elem.data('key');
+            console.log(id,key);
             const html: string = await app.getTradeDetails(id);
 
             $("body > .responsive_page_frame").hide();
@@ -39,8 +40,8 @@ try {
 function getMobileConfButtons(id: number, key: string): string {
     return `<div id="mobileconf_buttons">
                 <div>
-                    <div class="mobileconf_button mobileconf_button_cancel" onclick="declineTrade(${id}, ${key})">Cancel</div>
-                    <div class="mobileconf_button mobileconf_button_accept" onclick="confirmTrade(${id}, ${key})">Accept</div>
+                    <div class="mobileconf_button mobileconf_button_cancel" onclick="declineTrade(${id}, '${key}')">Cancel</div>
+                    <div class="mobileconf_button mobileconf_button_accept" onclick="confirmTrade(${id}, '${key}')">Accept</div>
                 </div>
             </div>`
 }

@@ -14,10 +14,11 @@ try {
         const tradesPageParsed = parser.parseFromString(await tradesPage, "text/html");
         const confirmations = $("body > .responsive_page_frame", tradesPageParsed);
         $body.append(confirmations);
-        $(".mobileconf_list_entry").on("click", async (event) => {
-            const $elem = $(event.target);
+        $(".mobileconf_list_entry").on("click", async function () {
+            const $elem = $(this);
             const id = parseInt($elem.data('confid'));
             const key = $elem.data('key');
+            console.log(id, key);
             const html = await app.getTradeDetails(id);
             $("body > .responsive_page_frame").hide();
             $("body").append(html, getMobileConfButtons(id, key));
@@ -31,8 +32,8 @@ catch (err) {
 function getMobileConfButtons(id, key) {
     return `<div id="mobileconf_buttons">
                 <div>
-                    <div class="mobileconf_button mobileconf_button_cancel" onclick="declineTrade(${id}, ${key})">Cancel</div>
-                    <div class="mobileconf_button mobileconf_button_accept" onclick="confirmTrade(${id}, ${key})">Accept</div>
+                    <div class="mobileconf_button mobileconf_button_cancel" onclick="declineTrade(${id}, '${key}')">Cancel</div>
+                    <div class="mobileconf_button mobileconf_button_accept" onclick="confirmTrade(${id}, '${key}')">Accept</div>
                 </div>
             </div>`;
 }

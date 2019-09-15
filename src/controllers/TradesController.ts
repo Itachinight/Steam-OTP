@@ -40,6 +40,7 @@ export default class TradesController {
 
         try {
             const result: Response = await this.sendRequest(url);
+            console.log(result, url);
             const json: {success: boolean, html: string} = await result.json();
 
             return json.html;
@@ -86,16 +87,12 @@ export default class TradesController {
         const time: number = Math.floor(Date.now() / 1000);
         const steamId = new BigNumber({...this.maFile.Session.SteamID, _isBigNumber: true});
 
-        console.log(SteamOtp.getConfirmationKey(this.maFile.identity_secret, time, tag));
-
         qs.set("p", this.maFile.device_id);
         qs.set("a", steamId.toString(10));
         qs.set("t", String(time));
         qs.set("k", SteamOtp.getConfirmationKey(this.maFile.identity_secret, time, tag));
         qs.set("m", "android");
         qs.set("tag", tag);
-
-        console.log(qs.toString());
 
         return qs;
     }
