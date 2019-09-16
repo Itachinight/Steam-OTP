@@ -1,11 +1,14 @@
 import * as fs from 'fs';
 import * as util from 'util';
-import {format, join, ParsedPath} from 'path';
+import {format, join, parse, ParsedPath} from 'path';
 import SteamOtp from '../classes/SteamOtp';
 import MaFile from "../models/MaFile";
+import {FullFilePath} from "../types";
 
 const JsonBigInt = require('json-bigint')();
 const readFile = util.promisify(fs.readFile);
+const unlink = util.promisify(fs.unlink);
+const readDir = util.promisify(fs.readdir);
 
 async function getDataFromDb(content: string, account_name: string): Promise<Partial<MaFile>> {
     const { shared_secret, identity_secret, device_id } = JSON.parse(content)._MobileAuthenticator;
@@ -22,7 +25,7 @@ function getDataFromMaFile(content: string): Partial<MaFile> {
 }
 
 async function getLoginFromJson(filePath: ParsedPath): Promise<string> {
-    const { dir, name } = filePath;
+    const {dir, name} = filePath;
     const fullPath: string = format({
         dir,
         name,
@@ -38,12 +41,9 @@ async function getLoginFromJson(filePath: ParsedPath): Promise<string> {
 }
 
 async function getSteam2FaFields(filePath: ParsedPath): Promise<Partial<MaFile>> {
-    filePath.ext = filePath.ext.toLowerCase();
-    if (!(filePath.ext === '.db' || filePath.ext === '.mafile')) throw new TypeError();
-
-    let maFile: Partial<MaFile>;
     const fullPath = join(filePath.dir, filePath.base);
     const fileContent = await readFile(fullPath, 'UTF-8');
+    let maFile: Partial<MaFile>;
 
     if (filePath.ext === '.db') {
         const login = await getLoginFromJson(filePath);
@@ -53,7 +53,10 @@ async function getSteam2FaFields(filePath: ParsedPath): Promise<Partial<MaFile>>
     return maFile;
 }
 
-export async function getDataFromFile(filePath: ParsedPath): Promise<Partial<MaFile>> {
+export async function getDataFromFile(filePath: FullFilePath): Promise<Partial<MaFile>> {
+    filePath.ext = filePath.ext.toLowerCase();
+    if (filePath.ext !== '.db' && filePath.ext !== '.mafile') throw new Error(`${filePath.base} is not maFile/db`);
+
     let accData: Partial<MaFile>;
 
     try {
@@ -71,4 +74,21 @@ export async function getDataFromFile(filePath: ParsedPath): Promise<Partial<MaF
     }
 
     return accData;
+}
+
+export async function deleteFile(filePath: ParsedPath): Promise<void> {
+    await unlink(format(filePath));
+}
+
+export async function readFilesDir(dir: string): Promise<FullFilePath[]> {
+    const files: string[] = await readDir(dir);
+    return files.map(file => {
+        const fullPath = join(dir, file);
+        const filePath: FullFilePath = parse(fullPath);
+
+        filePath.ext = filePath.ext.toLowerCase();
+        filePath.fullPath = fullPath;
+
+        return filePath;
+    });
 }

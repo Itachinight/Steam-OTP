@@ -37,12 +37,10 @@ export default class SteamOtp {
         const bufferedIdentitySecret: Buffer = SteamOtp.bufferSecret(identitySecret);
         let dataLen: number = 8;
 
-        if (tag) {
-            if (tag.length > 32) {
-                dataLen += 32;
-            } else {
-                dataLen += tag.length;
-            }
+        if (tag.length > 32) {
+            dataLen += 32;
+        } else {
+            dataLen += tag.length;
         }
 
         const buffer: Buffer = Buffer.allocUnsafe(dataLen);

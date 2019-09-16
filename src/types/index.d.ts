@@ -11,12 +11,9 @@ interface AccountAuthData {
     code: string
 }
 
-interface Session extends SteamCookies {
+interface Session {
     SteamLogin?: string
     WebCookie?: string
-}
-
-interface SteamCookies {
     SessionID?: string
     SteamLoginSecure?: string
     OAuthToken?: string

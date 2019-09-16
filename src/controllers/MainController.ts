@@ -1,15 +1,9 @@
-import * as fs from "fs";
-import * as util from "util";
-import * as path from "path";
 import SteamOtp from "../classes/SteamOtp";
-import {getDataFromFile} from "../utils/fileReader";
+import {getDataFromFile, deleteFile, readFilesDir} from "../utils/fileReader";
 import {asyncFilter} from "../utils/asyncFunc";
 import SteamTimeAligner from "../classes/SteamTimeAligner";
 import MaFile from "../models/MaFile";
 import {AccountAuthData, FullFilePath} from "../types";
-import {getCookies} from "../utils/steamAuth";
-
-const readDir = util.promisify(fs.readdir);
 
 export default class MainController {
 
@@ -32,8 +26,13 @@ export default class MainController {
         return this.steamOtp.steamTimeOffset;
     }
 
-    public async updateSession(login: string, password: string) {
-        this.currentMaFile.SessionCookies = await getCookies(login, password, this.accountAuthData.code);
+    public async login(login: string, password: string) {
+        await this.currentMaFile.login(login, password, this.accountAuthData.code);
+        await this.currentMaFile.save(this.configDir);
+    }
+
+    public async refreshSession() {
+        await this.currentMaFile.refreshSession();
         await this.currentMaFile.save(this.configDir);
     }
 
@@ -58,7 +57,7 @@ export default class MainController {
         };
 
         return this.accountAuthData;
-    };
+    }
 
     public get2FaFromSecret(shared_secret: string): AccountAuthData {
         this.accountAuthData = {
@@ -67,32 +66,29 @@ export default class MainController {
         };
 
         return this.accountAuthData;
-    };
+    }
 
     public refresh2Fa(): AccountAuthData {
         this.accountAuthData.code = this.steamOtp.getAuthCode(this.currentMaFile.shared_secret);
 
         return this.accountAuthData;
-    };
+    }
 
     public async saveToConfig(file: string): Promise<void> {
         const maFile: MaFile = await MaFile.getFromFile(file);
-        await maFile.save(this.configDir);
-    };
+        await maFile.save(this.configDir, 'wx');
+    }
+
+    public async deleteFile(): Promise<string> {
+        const {path} = this.currentMaFile;
+        await deleteFile(path);
+        return path.name;
+    }
 
     public async getConfigFilesList(): Promise<FullFilePath[]> {
-        const files: string[] = await readDir(this.configDir);
-        const filesPath: FullFilePath[] = files.map(file => {
-            const fullPath = path.join(this.configDir, file);
-            const filePath: FullFilePath = path.parse(fullPath);
+        const filesPaths: FullFilePath[] = await readFilesDir(this.configDir);
 
-            filePath.ext = filePath.ext.toLowerCase();
-            filePath.fullPath = fullPath;
-
-            return filePath;
-        });
-
-        async function filterFiles(filePath: FullFilePath): Promise<boolean> {
+        return await asyncFilter(filesPaths, async (filePath: FullFilePath): Promise<boolean> => {
             if (filePath.ext === ".db" || filePath.ext === ".mafile") {
                 try {
                     const {shared_secret} = await getDataFromFile(filePath);
@@ -102,8 +98,6 @@ export default class MainController {
                 }
             }
             return false;
-        }
-
-        return await asyncFilter(filesPath, filterFiles);
-    };
-};
+        });
+    }
+}

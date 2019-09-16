@@ -17,7 +17,7 @@ jQuery(async ($) => {
     const $body = $('body');
     const $filesSelector: JQuery<Element> = $('#files');
     const $otp: JQuery<Element> = $('#otp p');
-    const $err: JQuery<Element> = $('#err p');
+    const $msg: JQuery<Element> = $('#msg-area p');
     const $dropZone: JQuery<Element> = $('#from-file');
     const $progressBar: JQuery<Element> = $('#progress > div');
     const $secret: JQuery<HTMLInputElement> = $('#secret');
@@ -39,6 +39,10 @@ jQuery(async ($) => {
         $filesSelector.find('li.active-file').removeClass('active-file');
         $elem.addClass('active-file');
 
+        const elemNumber: number = parseInt($elem.data('id'));
+        const numberToScroll: number = elemNumber > 4 ? elemNumber-4 : 1;
+        $filesSelector.mCustomScrollbar('scrollTo', $(`li[data-id ="${numberToScroll}"]`));
+
         try {
             const otp: AccountAuthData = await app.get2FaFromFile(fullPath);
             $loginInput.val(otp.maFile.account_name);
@@ -53,7 +57,7 @@ jQuery(async ($) => {
 
     async function uploadFiles(files: WebKitFile[]) {
         const results: PromiseResult<Promise<void>, unknown>[] = await AllSettled(files.map(file => app.saveToConfig(file.path)));
-        let countSuccessfulFiles: number = 0;
+        let successfulFiles: number = 0;
 
         if (results.length === 1) {
             const result: PromiseResult<Promise<void>, unknown> = results[0];
@@ -64,13 +68,13 @@ jQuery(async ($) => {
         } else {
             results.forEach((result: PromiseResult<Promise<void>, unknown>) => {
                 if (result.status === 'rejected') return;
-                countSuccessfulFiles++;
+                successfulFiles++;
             });
 
-            renderMessage(`${countSuccessfulFiles} of ${results.length} files were successfully saved`);
+            renderMessage(`${successfulFiles} of ${results.length} files were successfully saved`);
         }
 
-        await updateFilesList();
+        if (successfulFiles != 0) await updateFilesList();
     }
 
     async function updateFilesList(): Promise<void> {
@@ -78,8 +82,10 @@ jQuery(async ($) => {
         const files: FullFilePath[] = await app.getConfigFilesList();
 
         if(files.length !== 0) {
+            let i: number = 1;
+
             files.forEach(file => {
-                $filesSelector.append(`<li data-full-path="${file.fullPath}">${file.base}</li>`);
+                $filesSelector.append(`<li data-id="${i++}" data-full-path="${file.fullPath}">${file.base}</li>`);
             });
 
             $filesSelector.mCustomScrollbar(scrollBarOpts);
@@ -94,8 +100,8 @@ jQuery(async ($) => {
     }
 
     function renderMessage(message: string) {
-        $err.text(message).fadeIn(750, () => {
-            setTimeout(() => $err.fadeOut(500, () => $err.empty()), 2000)
+        $msg.text(message).fadeIn(750, () => {
+            setTimeout(() => $msg.fadeOut(500, () => $msg.empty()), 2000)
         });
     }
 
@@ -229,22 +235,39 @@ jQuery(async ($) => {
             }
         });
 
-
-    $('.auth-data').on('click', (event: ClickEvent) => event.stopPropagation());
-    $('#session').on('click', () => $modalWrapper.fadeIn(350));
-    $modalWrapper.on('click', () => $modalWrapper.fadeOut(350));
-
     $('#trades').on('click', () => {
         const maFile: MaFile = app.currentMaFile;
         ipcRenderer.send("open-trades", maFile);
     });
 
+    $('#refresh-session').on('click', async () => {
+        try {
+            await app.refreshSession();
+            renderMessage("Account Session Refreshed");
+        } catch (err) {
+            renderMessage(err);
+        }
+
+    });
+
+    $('#delete').on('click', async () => {
+        const $activeFile: JQuery<Element> = $('li.active-file');
+        const fileName: string = await app.deleteFile();
+        await toggleActiveFile($activeFile.next());
+        $activeFile.remove();
+        renderMessage(`${fileName} Was Deleted`);
+    });
+
+    $('.auth-data').on('click', (event: ClickEvent) => event.stopPropagation());
+    $('#login-again').on('click', () => $modalWrapper.fadeIn(350));
+    $modalWrapper.on('click', () => $modalWrapper.fadeOut(300));
+
     $('#send').on('click', async () => {
         const login: string = <string> $loginInput.val();
         const password: string = <string> $passwordInput.val();
 
-        $modalWrapper.fadeOut(450);
-        await app.updateSession(login, password);
+        $modalWrapper.fadeOut(400);
+        await app.login(login, password);
     });
 
     $otp.on('click', () => {
@@ -261,11 +284,11 @@ jQuery(async ($) => {
     const $minimize = $('#minimize-btn');
 
     $close
-        .on('mouseleave mouseup', () => $close.blur())
+        .on('mouseleave mouseup', () => $close.trigger('blur'))
         .on('click', () => window.close());
 
     $minimize
-        .on('mouseleave mouseup', () => $minimize.blur())
+        .on('mouseleave mouseup', () => $minimize.trigger('blur'))
         .on('click', () => ipcRenderer.send('main-minimize'));
 
 });
