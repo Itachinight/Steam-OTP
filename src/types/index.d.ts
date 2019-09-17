@@ -1,21 +1,10 @@
-import {ParsedPath} from "path";
-import MaFile from "../models/MaFile";
 import BigNumber from "bignumber.js";
 
-interface FullFilePath extends ParsedPath {
-    fullPath?: string
-}
-
-interface AccountAuthData {
-    maFile: MaFile
-    code: string
-}
-
 interface Session {
-    SteamLogin?: string
-    WebCookie?: string
-    SessionID?: string
-    SteamLoginSecure?: string
-    OAuthToken?: string
+    SteamLogin: string|null
+    WebCookie: string|null
+    SessionID: string|null
+    SteamLoginSecure: string|null
+    OAuthToken: string|null
     SteamID: BigNumber
 }

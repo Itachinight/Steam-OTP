@@ -4,10 +4,10 @@ const MainController_1 = require("../controllers/MainController");
 const AllSettled = require("promise.allsettled");
 const jQuery = require("jquery");
 const mCustomScrollbar = require("malihu-custom-scrollbar-plugin");
+const path_1 = require("path");
 const electron_1 = require("electron");
+const messages_1 = require("../messages");
 jQuery(async ($) => {
-    const app = await MainController_1.default.getInstance();
-    mCustomScrollbar($);
     const $body = $('body');
     const $filesSelector = $('#files');
     const $otp = $('#otp p');
@@ -18,30 +18,35 @@ jQuery(async ($) => {
     const $loginInput = $('#login');
     const $passwordInput = $('#password');
     const $modalWrapper = $('#modal-wrapper');
+    mCustomScrollbar($);
     const scrollBarOpts = {
         theme: "minimal",
         scrollInertia: 350,
         mouseWheel: {
             preventDefault: true,
             scrollAmount: 200,
+        },
+        advanced: {
+            autoUpdateTimeout: 3,
         }
     };
+    const app = await MainController_1.default.getInstance();
     async function toggleActiveFile($elem) {
         const fullPath = $elem.data('fullPath');
         $filesSelector.find('li.active-file').removeClass('active-file');
         $elem.addClass('active-file');
-        const elemNumber = parseInt($elem.data('id'));
-        const numberToScroll = elemNumber > 4 ? elemNumber - 4 : 1;
-        $filesSelector.mCustomScrollbar('scrollTo', $(`li[data-id ="${numberToScroll}"]`));
+        const elemNumber = parseInt($elem.attr('id'));
+        const numberToScroll = elemNumber > 5 ? elemNumber - 4 : 1;
+        console.log(elemNumber, numberToScroll);
+        $filesSelector.mCustomScrollbar('scrollTo', $(`li[id ="${numberToScroll}"]`));
         try {
             const otp = await app.get2FaFromFile(fullPath);
-            $loginInput.val(otp.maFile.account_name);
+            $loginInput.val(app.maFile.account_name);
             $passwordInput.val('');
             renderOtp(otp);
         }
         catch (err) {
-            console.error(err);
-            renderMessage('Some Files Are Not Available. Account List Refreshed');
+            renderMessage(messages_1.Messages.missingFiles);
             await updateFilesList();
         }
     }
@@ -49,43 +54,44 @@ jQuery(async ($) => {
         const results = await AllSettled(files.map(file => app.saveToConfig(file.path)));
         let successfulFiles = 0;
         if (results.length === 1) {
-            const result = results[0];
-            if (result.status === 'rejected') {
+            const [result] = results;
+            if (result.status === "rejected") {
                 const { message } = result.reason;
                 renderMessage(message);
             }
-            else
-                renderMessage('File was successfully saved');
+            else {
+                renderMessage(messages_1.Messages.fileSaved);
+                await updateFilesList();
+            }
         }
         else {
             results.forEach((result) => {
-                if (result.status === 'rejected')
+                if (result.status === "rejected")
                     return;
                 successfulFiles++;
             });
-            renderMessage(`${successfulFiles} of ${results.length} files were successfully saved`);
+            renderMessage(messages_1.CompositeMessages.filesSaved(successfulFiles, results.length));
+            if (successfulFiles !== 0)
+                await updateFilesList();
         }
-        if (successfulFiles != 0)
-            await updateFilesList();
     }
     async function updateFilesList() {
-        $filesSelector.mCustomScrollbar('destroy').empty();
-        const files = await app.getConfigFilesList();
-        if (files.length !== 0) {
+        $filesSelector.mCustomScrollbar("destroy").empty();
+        const filesPaths = await app.getConfigFilesList();
+        if (filesPaths.length !== 0) {
             let i = 1;
-            files.forEach(file => {
-                $filesSelector.append(`<li data-id="${i++}" data-full-path="${file.fullPath}">${file.base}</li>`);
+            filesPaths.forEach(filePath => {
+                $filesSelector.append(`<li id="${i++}" data-full-path="${path_1.format(filePath)}">${filePath.base}</li>`);
             });
             $filesSelector.mCustomScrollbar(scrollBarOpts);
             await toggleActiveFile($filesSelector.find('li:first-of-type'));
         }
     }
     function renderOtp(otp) {
-        const { code } = otp;
-        $otp.fadeOut(125, () => $otp.text(code)).fadeIn(125);
+        $otp.fadeOut(125, () => $otp.text(otp)).fadeIn(125);
     }
     function renderMessage(message) {
-        $msg.text(message).fadeIn(750, () => {
+        $msg.text(message).fadeIn(500, () => {
             setTimeout(() => $msg.fadeOut(500, () => $msg.empty()), 2000);
         });
     }
@@ -112,14 +118,11 @@ jQuery(async ($) => {
             if (count === 1) {
                 (function reload() {
                     const otp = app.refresh2Fa();
-                    if (otp.code !== $otp.text()) {
-                        console.log('new code');
+                    if (otp !== $otp.text()) {
                         renderOtp(otp);
                     }
-                    else {
-                        console.log('miss');
-                        setTimeout(reload, 500);
-                    }
+                    else
+                        setTimeout(reload, 1000);
                 }());
             }
         }, 1000);
@@ -202,33 +205,51 @@ jQuery(async ($) => {
         }
     });
     $('#trades').on('click', () => {
-        const maFile = app.currentMaFile;
-        electron_1.ipcRenderer.send("open-trades", maFile);
+        electron_1.ipcRenderer.send("open-trades", app.maFile);
     });
     $('#refresh-session').on('click', async () => {
         try {
             await app.refreshSession();
-            renderMessage("Account Session Refreshed");
+            renderMessage(messages_1.Messages.sesRefreshed);
         }
         catch (err) {
-            renderMessage(err);
+            renderMessage(err.message);
         }
     });
     $('#delete').on('click', async () => {
-        const $activeFile = $('li.active-file');
-        const fileName = await app.deleteFile();
-        await toggleActiveFile($activeFile.next());
-        $activeFile.remove();
-        renderMessage(`${fileName} Was Deleted`);
+        try {
+            const $activeFile = $('li.active-file');
+            const fileName = await app.deleteFile();
+            const $newActive = $activeFile.attr('id') === "1" ? $activeFile.next() : $activeFile.prev();
+            await $activeFile.animate({ height: "0", padding: "0" }, 300).promise();
+            $activeFile.remove();
+            await toggleActiveFile($newActive);
+            let id = 1;
+            $filesSelector.find("li").each(function () {
+                $(this).attr("id", id++);
+            });
+            if ($filesSelector.find("li:last-of-type").attr('id') === '9') {
+                $filesSelector.mCustomScrollbar("destroy");
+            }
+            renderMessage(messages_1.CompositeMessages.deletedFile(fileName));
+        }
+        catch (err) {
+            renderMessage(messages_1.Messages.unknownErr);
+        }
     });
     $('.auth-data').on('click', (event) => event.stopPropagation());
-    $('#login-again').on('click', () => $modalWrapper.fadeIn(350));
+    $('#login-again').on('click', () => $modalWrapper.fadeIn(400));
     $modalWrapper.on('click', () => $modalWrapper.fadeOut(300));
     $('#send').on('click', async () => {
         const login = $loginInput.val();
         const password = $passwordInput.val();
         $modalWrapper.fadeOut(400);
-        await app.login(login, password);
+        try {
+            await app.login(login, password);
+        }
+        catch (err) {
+            renderMessage(err.message);
+        }
     });
     $otp.on('click', () => {
         const $wrapper = $otp.parent();

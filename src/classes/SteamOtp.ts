@@ -14,20 +14,18 @@ export default class SteamOtp {
     }
 
     public static bufferSecret(secret: string): Buffer {
-        if (!SteamOtp.isSecretValid(secret)) {
-            throw new Error("Wrong Secret Given");
-        }
+        if (!SteamOtp.isSecretValid(secret)) throw new Error("Wrong Secret Given");
 
         return Buffer.from(secret, "base64");
     }
 
 
-    private static bufferToOTP(fullCode: number): string {
+    private static bufferToOTP(bufferValue: number): string {
         let otp: string = "";
 
         for (let i = 0; i < 5; i++) {
-            otp += SteamOtp.chars.charAt(fullCode % SteamOtp.chars.length);
-            fullCode /= SteamOtp.chars.length;
+            otp += SteamOtp.chars.charAt(bufferValue % SteamOtp.chars.length);
+            bufferValue /= SteamOtp.chars.length;
         }
 
         return otp;
@@ -35,15 +33,15 @@ export default class SteamOtp {
 
     public static getConfirmationKey(identitySecret: string, time: number, tag: string): string {
         const bufferedIdentitySecret: Buffer = SteamOtp.bufferSecret(identitySecret);
-        let dataLen: number = 8;
+        let dataLength: number = 8;
 
         if (tag.length > 32) {
-            dataLen += 32;
+            dataLength += 32;
         } else {
-            dataLen += tag.length;
+            dataLength += tag.length;
         }
 
-        const buffer: Buffer = Buffer.allocUnsafe(dataLen);
+        const buffer: Buffer = Buffer.allocUnsafe(dataLength);
         buffer.writeUInt32BE(0, 0);
         buffer.writeUInt32BE(time, 4);
 

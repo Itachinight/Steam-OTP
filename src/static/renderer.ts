@@ -3,17 +3,12 @@ import * as AllSettled from 'promise.allsettled'
 import * as jQuery from 'jquery';
 import * as mCustomScrollbar from 'malihu-custom-scrollbar-plugin';
 import CustomScrollbarOptions = MCustomScrollbar.CustomScrollbarOptions;
-import {AccountAuthData, FullFilePath} from "../types";
-import Event = JQuery.Event;
+import {ParsedPath, format} from "path";
 import {ipcRenderer} from "electron";
-import MaFile from "../models/MaFile";
 import {PromiseResult} from "promise.allsettled";
-import ClickEvent = JQuery.ClickEvent;
+import {Messages, CompositeMessages} from "../messages"
 
 jQuery(async ($) => {
-    const app: MainController = await MainController.getInstance();
-
-    mCustomScrollbar($);
     const $body = $('body');
     const $filesSelector: JQuery<Element> = $('#files');
     const $otp: JQuery<Element> = $('#otp p');
@@ -25,32 +20,38 @@ jQuery(async ($) => {
     const $passwordInput: JQuery<HTMLInputElement> = $('#password');
     const $modalWrapper: JQuery<Element> = $('#modal-wrapper');
 
+    mCustomScrollbar($);
     const scrollBarOpts: CustomScrollbarOptions = {
         theme: "minimal",
         scrollInertia: 350,
         mouseWheel: {
             preventDefault: true,
             scrollAmount: 200,
+        },
+        advanced: {
+            autoUpdateTimeout: 3,
         }
     };
+
+    const app: MainController = await MainController.getInstance();
 
     async function toggleActiveFile($elem: JQuery<Element>) {
         const fullPath: string = <string> $elem.data('fullPath');
         $filesSelector.find('li.active-file').removeClass('active-file');
         $elem.addClass('active-file');
 
-        const elemNumber: number = parseInt($elem.data('id'));
-        const numberToScroll: number = elemNumber > 4 ? elemNumber-4 : 1;
-        $filesSelector.mCustomScrollbar('scrollTo', $(`li[data-id ="${numberToScroll}"]`));
+        const elemNumber: number = parseInt(<string> $elem.attr('id'));
+        const numberToScroll: number = elemNumber > 5 ? elemNumber - 4 : 1;
+        console.log(elemNumber, numberToScroll);
+        $filesSelector.mCustomScrollbar('scrollTo', $(`li[id ="${numberToScroll}"]`));
 
         try {
-            const otp: AccountAuthData = await app.get2FaFromFile(fullPath);
-            $loginInput.val(otp.maFile.account_name);
+            const otp: string = await app.get2FaFromFile(fullPath);
+            $loginInput.val(app.maFile.account_name);
             $passwordInput.val('');
             renderOtp(otp);
         } catch (err) {
-            console.error(err);
-            renderMessage('Some Files Are Not Available. Account List Refreshed');
+            renderMessage(Messages.missingFiles);
             await updateFilesList();
         }
     }
@@ -60,32 +61,34 @@ jQuery(async ($) => {
         let successfulFiles: number = 0;
 
         if (results.length === 1) {
-            const result: PromiseResult<Promise<void>, unknown> = results[0];
-            if (result.status === 'rejected') {
+            const [result] = results;
+            if (result.status === "rejected") {
                 const {message} = <Error> result.reason;
                 renderMessage(message);
-            } else renderMessage('File was successfully saved');
+            } else {
+                renderMessage(Messages.fileSaved);
+                await updateFilesList();
+            }
         } else {
             results.forEach((result: PromiseResult<Promise<void>, unknown>) => {
-                if (result.status === 'rejected') return;
+                if (result.status === "rejected") return;
                 successfulFiles++;
             });
 
-            renderMessage(`${successfulFiles} of ${results.length} files were successfully saved`);
+            renderMessage(CompositeMessages.filesSaved(successfulFiles, results.length));
+            if (successfulFiles !== 0) await updateFilesList();
         }
-
-        if (successfulFiles != 0) await updateFilesList();
     }
 
     async function updateFilesList(): Promise<void> {
-        $filesSelector.mCustomScrollbar('destroy').empty();
-        const files: FullFilePath[] = await app.getConfigFilesList();
+        $filesSelector.mCustomScrollbar("destroy").empty();
+        const filesPaths: ParsedPath[] = await app.getConfigFilesList();
 
-        if(files.length !== 0) {
+        if(filesPaths.length !== 0) {
             let i: number = 1;
 
-            files.forEach(file => {
-                $filesSelector.append(`<li data-id="${i++}" data-full-path="${file.fullPath}">${file.base}</li>`);
+            filesPaths.forEach(filePath => {
+                $filesSelector.append(`<li id="${i++}" data-full-path="${format(filePath)}">${filePath.base}</li>`);
             });
 
             $filesSelector.mCustomScrollbar(scrollBarOpts);
@@ -94,13 +97,12 @@ jQuery(async ($) => {
         }
     }
 
-    function renderOtp(otp: AccountAuthData) {
-        const { code } = otp;
-        $otp.fadeOut(125, () => $otp.text(code)).fadeIn(125);
+    function renderOtp(otp: string) {
+        $otp.fadeOut(125, () => $otp.text(otp)).fadeIn(125);
     }
 
     function renderMessage(message: string) {
-        $msg.text(message).fadeIn(750, () => {
+        $msg.text(message).fadeIn(500, () => {
             setTimeout(() => $msg.fadeOut(500, () => $msg.empty()), 2000)
         });
     }
@@ -133,14 +135,10 @@ jQuery(async ($) => {
 
             if (count === 1) {
                 (function reload(): void {
-                    const otp: AccountAuthData = app.refresh2Fa();
-                    if (otp.code !== $otp.text()) {
-                        console.log('new code');
+                    const otp: string = app.refresh2Fa();
+                    if (otp !== $otp.text()) {
                         renderOtp(otp)
-                    } else {
-                        console.log('miss');
-                        setTimeout(reload, 500);
-                    }
+                    } else setTimeout(reload, 1000);
                 }());
             }
         }, 1000);
@@ -193,14 +191,14 @@ jQuery(async ($) => {
             const $elem: JQuery = $(this);
             if (!$elem.hasClass('active-file')) await toggleActiveFile($elem);
         })
-        .on('contextmenu', 'li', async function (event: Event) {
+        .on('contextmenu', 'li', async function (event: JQuery.Event) {
             const $elem: JQuery = $(this);
             if (!$elem.hasClass('active-file')) await toggleActiveFile($elem);
             showContextMenu(event);
         })
         .on('contextmenu', 'li.active-file', showContextMenu);
 
-    function showContextMenu(event: Event) {
+    function showContextMenu(event: JQuery.Event) {
         event.stopPropagation();
         const clientX: number = <number> event.clientX;
         const x: number = document.documentElement.clientWidth - clientX > 120 ? clientX : clientX - 180;
@@ -214,12 +212,12 @@ jQuery(async ($) => {
     }
 
     $secret
-        .on("keydown", function (event: Event) {
+        .on("keydown", function (event: JQuery.Event) {
             if (event.key === "Enter" && $secret.hasClass("valid")) {
                 const secret: string = <string> $(this).val();
 
                 try {
-                    const otp: AccountAuthData = app.get2FaFromSecret(secret);
+                    const otp: string = app.get2FaFromSecret(secret);
                     $filesSelector.find('li.active-file').removeClass('active-file');
                     renderOtp(otp);
                 } catch (err) {
@@ -236,30 +234,47 @@ jQuery(async ($) => {
         });
 
     $('#trades').on('click', () => {
-        const maFile: MaFile = app.currentMaFile;
-        ipcRenderer.send("open-trades", maFile);
+        ipcRenderer.send("open-trades", app.maFile);
     });
 
     $('#refresh-session').on('click', async () => {
         try {
             await app.refreshSession();
-            renderMessage("Account Session Refreshed");
+            renderMessage(Messages.sesRefreshed);
         } catch (err) {
-            renderMessage(err);
+            renderMessage(err.message);
+        }
+    });
+
+    $('#delete').on('click', async () => {
+        try {
+            const $activeFile: JQuery<Element> = $('li.active-file');
+            const fileName: string = await app.deleteFile();
+            const $newActive: JQuery<Element> = <string> $activeFile.attr('id') === "1" ? $activeFile.next() : $activeFile.prev();
+
+            await $activeFile.animate({height: "0", padding: "0"}, 300).promise();
+            $activeFile.remove();
+
+            await toggleActiveFile($newActive);
+
+            let id = 1;
+            $filesSelector.find("li").each(function() {
+                $(this).attr("id", id++)
+            });
+
+            if ($filesSelector.find("li:last-of-type").attr('id') === '9') {
+                $filesSelector.mCustomScrollbar("destroy");
+            }
+
+            renderMessage(CompositeMessages.deletedFile(fileName));
+        } catch (err) {
+            renderMessage(Messages.unknownErr)
         }
 
     });
 
-    $('#delete').on('click', async () => {
-        const $activeFile: JQuery<Element> = $('li.active-file');
-        const fileName: string = await app.deleteFile();
-        await toggleActiveFile($activeFile.next());
-        $activeFile.remove();
-        renderMessage(`${fileName} Was Deleted`);
-    });
-
-    $('.auth-data').on('click', (event: ClickEvent) => event.stopPropagation());
-    $('#login-again').on('click', () => $modalWrapper.fadeIn(350));
+    $('.auth-data').on('click', (event: JQuery.ClickEvent) => event.stopPropagation());
+    $('#login-again').on('click', () => $modalWrapper.fadeIn(400));
     $modalWrapper.on('click', () => $modalWrapper.fadeOut(300));
 
     $('#send').on('click', async () => {
@@ -267,7 +282,11 @@ jQuery(async ($) => {
         const password: string = <string> $passwordInput.val();
 
         $modalWrapper.fadeOut(400);
-        await app.login(login, password);
+        try {
+            await app.login(login, password);
+        } catch (err) {
+            renderMessage(err.message);
+        }
     });
 
     $otp.on('click', () => {

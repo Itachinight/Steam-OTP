@@ -3,7 +3,6 @@ import * as util from 'util';
 import {format, join, parse, ParsedPath} from 'path';
 import SteamOtp from '../classes/SteamOtp';
 import MaFile from "../models/MaFile";
-import {FullFilePath} from "../types";
 
 const JsonBigInt = require('json-bigint')();
 const readFile = util.promisify(fs.readFile);
@@ -53,7 +52,7 @@ async function getSteam2FaFields(filePath: ParsedPath): Promise<Partial<MaFile>>
     return maFile;
 }
 
-export async function getDataFromFile(filePath: FullFilePath): Promise<Partial<MaFile>> {
+export async function getDataFromFile(filePath: ParsedPath): Promise<Partial<MaFile>> {
     filePath.ext = filePath.ext.toLowerCase();
     if (filePath.ext !== '.db' && filePath.ext !== '.mafile') throw new Error(`${filePath.base} is not maFile/db`);
 
@@ -64,8 +63,6 @@ export async function getDataFromFile(filePath: FullFilePath): Promise<Partial<M
     } catch (err) {
         if (err instanceof SyntaxError) {
             throw new Error(`${filePath.base} is not valid JSON`);
-        } else if (err instanceof TypeError) {
-            throw new Error(`${filePath.base} is not maFile/db`);
         } else throw err;
     }
 
@@ -80,15 +77,13 @@ export async function deleteFile(filePath: ParsedPath): Promise<void> {
     await unlink(format(filePath));
 }
 
-export async function readFilesDir(dir: string): Promise<FullFilePath[]> {
+export async function readFilesDir(dir: string): Promise<ParsedPath[]> {
     const files: string[] = await readDir(dir);
     return files.map(file => {
         const fullPath = join(dir, file);
-        const filePath: FullFilePath = parse(fullPath);
+        const path: ParsedPath = parse(fullPath);
+        path.ext = path.ext.toLowerCase();
 
-        filePath.ext = filePath.ext.toLowerCase();
-        filePath.fullPath = fullPath;
-
-        return filePath;
+        return path;
     });
 }

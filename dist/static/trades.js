@@ -39,7 +39,9 @@ function getMobileConfButtons(id, key) {
 }
 async function declineTrade(id, key) {
     console.log(await app.handleTrade("cancel", id, key));
+    document.location.reload();
 }
 async function confirmTrade(id, key) {
     console.log(await app.handleTrade("allow", id, key));
+    document.location.reload();
 }

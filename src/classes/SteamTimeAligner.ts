@@ -6,14 +6,12 @@ export default class SteamTimeAligner {
     static url: string = "https://api.steampowered.com/ITwoFactorService/QueryTime/v1/";
     static params: RequestInit = {
         method: 'POST',
-        headers: {
-            'Content-Length': '0'
-        }
+        headers: {'Content-Length': '0'}
     };
 
     private static async getTime(): Promise<number> {
         const controller: AbortController = new AbortController();
-        const signal = <AbortSignal>controller.signal;
+        const signal = <AbortSignal> controller.signal;
 
         setTimeout(() => controller.abort(), 2000);
 
@@ -26,7 +24,7 @@ export default class SteamTimeAligner {
     public static async getOffset(): Promise<number> {
         try {
             const time: number = await SteamTimeAligner.getTime();
-            return time - Math.round(Date.now() / 1000);
+            return time - Math.floor(Date.now() / 1000);
         } catch (err) {
             console.error(err.message);
             return 0;

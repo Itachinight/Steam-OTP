@@ -6,17 +6,17 @@
   "serial_number": null,
   "revocation_code": null,
   "uri": null,
-  "server_time": 1568215981,
+  "server_time": 1568737253,
   "token_gid": null,
   "secret_1": null,
   "status": 1,
   "fully_enrolled": true,
   "Session": {
-    "SessionID": "d0f1dc4606562f0c39c35f17",
-    "SteamLogin": "76561197962905144%7c%7c0BE480D9BEACFEDB1AC96BA437BF4F735BA5F3BD",
-    "SteamLoginSecure": "76561197962905144%7C%7CA569FDD899AF1AC59AEC681DBB1734330770DAA6",
-    "WebCookie": "E8D71D614189673C0B421E335C1F79FC38CD8672",
-    "OAuthToken": "41aed320c0ead9ae90672b663491c8d0",
-    "SteamID": 76561197962905144
+    "SessionID": null,
+    "SteamLogin": null,
+    "SteamLoginSecure": null,
+    "WebCookie": null,
+    "OAuthToken": null,
+    "SteamID": 76000000000000000
   }
 }

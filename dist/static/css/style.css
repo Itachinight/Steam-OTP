@@ -178,7 +178,7 @@ section.active.visible {
     list-style: none;
     width: 80%;
     max-height: 333px;
-    min-height: 148px;
+    min-height: 185px;
     text-align: center;
     box-sizing: border-box;
     font-size: 20px;
@@ -195,8 +195,11 @@ section.active.visible {
 #files li {
     color: #ffffffcf;
     padding: 5px 0;
+    box-sizing: border-box;
+    overflow: hidden;
     cursor: pointer;
     user-select: none;
+    transition: background-color 350ms;
 }
 
 #files li:hover {
@@ -211,7 +214,7 @@ section.active.visible {
 #from-file {
     user-select: none;
     border: 3px solid transparent;
-    transition: border 200ms ease,
+    transition: border 300ms ease,
                 opacity linear 400ms;
     color: white;
     font-size: 32px;
@@ -226,7 +229,7 @@ section.active.visible {
     text-align: center;
     letter-spacing: 3px;
     font-size: 40px;
-    margin: 20px auto 15px;
+    margin: 0 auto 15px;
     color: #ffffffe6;
     border: 2px solid #ffffff99;
     border-radius: 30px;
@@ -257,7 +260,7 @@ section.active.visible {
 }
 
 #msg-area {
-    height: 80px;
+    height: 90px;
     justify-content: center;
     align-items: center;
     display: flex;

@@ -1,43 +1,21 @@
+import {ParsedPath} from "path";
+import MaFile from "../models/MaFile";
 import SteamOtp from "../classes/SteamOtp";
+import SteamTimeAligner from "../classes/SteamTimeAligner";
 import {getDataFromFile, deleteFile, readFilesDir} from "../utils/fileReader";
 import {asyncFilter} from "../utils/asyncFunc";
-import SteamTimeAligner from "../classes/SteamTimeAligner";
-import MaFile from "../models/MaFile";
-import {AccountAuthData, FullFilePath} from "../types";
 
 export default class MainController {
-
     private static instance: MainController;
 
+    private _maFile!: MaFile;
+    private code!: string;
     private steamOtp: SteamOtp;
-    private accountAuthData!: AccountAuthData;
     private readonly configDir: string;
 
     private constructor(offset: number) {
-        this.configDir = <string>process.env.CONFIG_PATH;
+        this.configDir = process.env.CONFIG_PATH || 'accounts';
         this.steamOtp = new SteamOtp(offset);
-    }
-
-    public get currentMaFile(): MaFile {
-        return this.accountAuthData.maFile;
-    }
-
-    public get steamTimeOffset(): number {
-        return this.steamOtp.steamTimeOffset;
-    }
-
-    public async login(login: string, password: string) {
-        await this.currentMaFile.login(login, password, this.accountAuthData.code);
-        await this.currentMaFile.save(this.configDir);
-    }
-
-    public async refreshSession() {
-        await this.currentMaFile.refreshSession();
-        await this.currentMaFile.save(this.configDir);
-    }
-
-    public static verifySharedSecret(sharedSecret?: string): boolean {
-        return SteamOtp.isSecretValid(sharedSecret);
     }
 
     public static async getInstance(): Promise<MainController> {
@@ -48,30 +26,46 @@ export default class MainController {
         return MainController.instance;
     }
 
-    public async get2FaFromFile(file: string): Promise<AccountAuthData> {
-        const maFile: MaFile = await MaFile.getFromFile(file);
-
-        this.accountAuthData = {
-            maFile,
-            code: this.steamOtp.getAuthCode(maFile.shared_secret),
-        };
-
-        return this.accountAuthData;
+    public get maFile(): MaFile {
+        return this._maFile;
     }
 
-    public get2FaFromSecret(shared_secret: string): AccountAuthData {
-        this.accountAuthData = {
-            maFile: MaFile.getFromSharedSecret(shared_secret),
-            code: this.steamOtp.getAuthCode(shared_secret)
-        };
-
-        return this.accountAuthData;
+    public get steamTimeOffset(): number {
+        return this.steamOtp.steamTimeOffset;
     }
 
-    public refresh2Fa(): AccountAuthData {
-        this.accountAuthData.code = this.steamOtp.getAuthCode(this.currentMaFile.shared_secret);
+    public async login(login: string, password: string) {
+        await this._maFile.login(login, password, this.code);
+        await this._maFile.save(this.configDir);
+    }
 
-        return this.accountAuthData;
+    public async refreshSession() {
+        await this._maFile.refreshSession();
+        await this._maFile.save(this.configDir);
+    }
+
+    public static verifySharedSecret(sharedSecret?: string): boolean {
+        return SteamOtp.isSecretValid(sharedSecret);
+    }
+
+    public async get2FaFromFile(file: string): Promise<string> {
+        this._maFile = await MaFile.getFromFile(file);
+        this.code = this.steamOtp.getAuthCode(this._maFile.shared_secret);
+
+        return this.code;
+    }
+
+    public get2FaFromSecret(sharedSecret: string): string {
+        this._maFile = MaFile.getFromSharedSecret(sharedSecret);
+        this.code = this.steamOtp.getAuthCode(sharedSecret);
+
+        return this.code;
+    }
+
+    public refresh2Fa(): string {
+        this.code = this.steamOtp.getAuthCode(this._maFile.shared_secret);
+
+        return this.code;
     }
 
     public async saveToConfig(file: string): Promise<void> {
@@ -80,15 +74,16 @@ export default class MainController {
     }
 
     public async deleteFile(): Promise<string> {
-        const {path} = this.currentMaFile;
+        const {path} = this._maFile;
         await deleteFile(path);
-        return path.name;
+
+        return `${path.name}${path.ext}`;
     }
 
-    public async getConfigFilesList(): Promise<FullFilePath[]> {
-        const filesPaths: FullFilePath[] = await readFilesDir(this.configDir);
+    public async getConfigFilesList(): Promise<ParsedPath[]> {
+        const filesPaths: ParsedPath[] = await readFilesDir(this.configDir);
 
-        return await asyncFilter(filesPaths, async (filePath: FullFilePath): Promise<boolean> => {
+        return await asyncFilter(filesPaths, async (filePath: ParsedPath): Promise<boolean> => {
             if (filePath.ext === ".db" || filePath.ext === ".mafile") {
                 try {
                     const {shared_secret} = await getDataFromFile(filePath);
