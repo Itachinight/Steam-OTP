@@ -3,14 +3,12 @@ import {Hmac, createHmac} from "crypto";
 export default class SteamOtp {
 
     public static readonly chars: string = "23456789BCDFGHJKMNPQRTVWXY";
-    public readonly steamTimeOffset: number;
 
-    public constructor(offset: number) {
-        this.steamTimeOffset = offset;
-    }
+    public constructor(public readonly steamTimeOffset: number) {}
 
-    public static isSecretValid(secret?: string): boolean {
-        return Boolean(secret && /^[a-z0-9+\/=]{28}$/i.test(secret));
+    public static isSecretValid(secret?: any): boolean {
+        if (typeof secret !== "string") return false;
+        return /^[a-z0-9+\/=]{28}$/i.test(secret);
     }
 
     public static bufferSecret(secret: string): Buffer {
@@ -53,7 +51,7 @@ export default class SteamOtp {
 
     public getAuthCode(sharedSecret: string): string {
         const bufferedSharedSecret: Buffer = SteamOtp.bufferSecret(sharedSecret);
-        const time: number = Math.floor((Date.now() / 1000) + this.steamTimeOffset);
+        const time: number = Date.timestamp() + this.steamTimeOffset;
         const buffer: Buffer = Buffer.allocUnsafe(8);
 
         buffer.writeUInt32BE(0, 0);

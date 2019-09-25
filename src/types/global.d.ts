@@ -4,6 +4,18 @@ declare namespace NodeJS {
     }
 }
 
+interface DateConstructor {
+    timestamp(): number;
+}
+
+interface Array<T> {
+    asyncFilter<T>(callback: AsyncFilterCallback): Promise<T[]>
+}
+
+interface AsyncFilterCallback {
+    (item: any): Promise<boolean>
+}
+
 interface SteamResponse {
     response: {
         server_time: string,
@@ -24,8 +36,4 @@ interface WebKitFile extends File {
 
 interface SharedObject {
     [propName: string]: any;
-}
-
-interface AsyncFilterCallback {
-    (item: any): Promise<boolean>
 }

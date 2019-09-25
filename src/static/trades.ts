@@ -1,40 +1,40 @@
 import * as jQuery from 'jquery';
 import TradesController from "../controllers/TradesController";
 import MaFile from "../models/MaFile";
-import {remote} from "electron"
+import {remote} from "electron";
 
 let app: TradesController;
 
-try {
+jQuery(async $ => {
     const maFile: MaFile = remote.getGlobal("sharedObject").maFile;
-    app = new TradesController(maFile);
+    document.title += ` - ${maFile.account_name}`;
 
-    jQuery(async $ => {
-        const tradesPage: Promise<string> = app.getTrades();
+    try {
+        app = new TradesController(maFile);
+        const tradesPage: Document = await app.getTradesPage();
         const $body: JQuery = $("body");
-        const parser: DOMParser = new DOMParser();
-        const tradesPageParsed: Document = parser.parseFromString(await tradesPage, "text/html");
-        const confirmations: JQuery = $("body > .responsive_page_frame", tradesPageParsed);
+        const confirmations: JQuery = $("body > .responsive_page_frame", tradesPage);
 
-        $body.append(confirmations);
+        $body
+            .append(confirmations)
+            .on("click", ".mobileconf_list_entry", async function () {
+                const $elem: JQuery<EventTarget> = $(this);
+                const id: number = Number.parseInt($elem.data("confid"));
+                const key: string = $elem.data("key");
+                const html: string = await app.getTradeDetails(id);
 
-        $(".mobileconf_list_entry").on("click", async function() {
-            const $elem: JQuery<EventTarget> = $(this);
-            const id: number = parseInt($elem.data('confid'));
-            const key: string = $elem.data('key');
-            console.log(id,key);
-            const html: string = await app.getTradeDetails(id);
+                $("body > .responsive_page_frame").hide();
+                $body.append(html, getMobileConfButtons(id, key));
+            });
+    } catch (err) {
+        console.error(err);
+        renderMessage(err.message);
+        window.close();
+    }
+});
 
-            $("body > .responsive_page_frame").hide();
-            $("body").append(
-                html,
-                getMobileConfButtons(id, key)
-            );
-        })
-    });
-} catch (err) {
-    document.write(err);
-    setTimeout(() => window.close(), 2000);
+function renderMessage(msg: string): void {
+    alert(msg);
 }
 
 function getMobileConfButtons(id: number, key: string): string {
@@ -47,11 +47,11 @@ function getMobileConfButtons(id: number, key: string): string {
 }
 
 async function declineTrade(id: number, key: string): Promise<void> {
-    console.log(await app.handleTrade("cancel", id, key));
+    await app.handleTrade("cancel", id, key);
     document.location.reload();
 }
 
 async function confirmTrade(id: number, key: string): Promise<void> {
-    console.log(await app.handleTrade("allow", id, key));
+    await app.handleTrade("allow", id, key)
     document.location.reload();
 }

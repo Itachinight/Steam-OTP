@@ -320,7 +320,7 @@ footer a:hover {
 }
 
 #context-menu > div {
-    padding: 10px 15px;
+    padding: 7px 15px;
 }
 
 #context-menu > div:hover {
@@ -335,7 +335,7 @@ footer a:hover {
     user-select: none;
     -webkit-app-region: drag;
     z-index: 99;
-    margin-top: 2px;
+    margin-top: 1px;
 }
 
 #steam-logo {

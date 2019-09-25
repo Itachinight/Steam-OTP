@@ -1,67 +1,68 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const MainController_1 = require("../controllers/MainController");
-const AllSettled = require("promise.allsettled");
 const jQuery = require("jquery");
 const mCustomScrollbar = require("malihu-custom-scrollbar-plugin");
 const path_1 = require("path");
 const electron_1 = require("electron");
+const MainController_1 = require("../controllers/MainController");
 const messages_1 = require("../messages");
 jQuery(async ($) => {
-    const $body = $('body');
-    const $filesSelector = $('#files');
-    const $otp = $('#otp p');
-    const $msg = $('#msg-area p');
-    const $dropZone = $('#from-file');
-    const $progressBar = $('#progress > div');
-    const $secret = $('#secret');
-    const $loginInput = $('#login');
-    const $passwordInput = $('#password');
-    const $modalWrapper = $('#modal-wrapper');
     mCustomScrollbar($);
+    const $body = $("body");
+    const $filesSelector = $("#files");
+    const $filesSection = $("#from-config-dir");
+    const $otp = $("#otp p");
+    const $msg = $("#msg-area p");
+    const $dropZone = $("#from-file");
+    const $progressBar = $("#progress > div");
+    const $secret = $("#secret");
+    const $loginInput = $("input[name='login']");
+    const $passwordInput = $("input[name='password']");
+    const $modalWrapper = $("#modal-wrapper");
+    const $close = $("#close-btn");
+    const $minimize = $("#minimize-btn");
     const scrollBarOpts = {
         theme: "minimal",
         scrollInertia: 350,
         mouseWheel: {
             preventDefault: true,
-            scrollAmount: 200,
+            scrollAmount: 150,
         },
         advanced: {
-            autoUpdateTimeout: 3,
+            autoUpdateTimeout: 5,
         }
     };
     const app = await MainController_1.default.getInstance();
     async function toggleActiveFile($elem) {
-        const fullPath = $elem.data('fullPath');
-        $filesSelector.find('li.active-file').removeClass('active-file');
-        $elem.addClass('active-file');
-        const elemNumber = parseInt($elem.attr('id'));
-        const numberToScroll = elemNumber > 5 ? elemNumber - 4 : 1;
-        console.log(elemNumber, numberToScroll);
-        $filesSelector.mCustomScrollbar('scrollTo', $(`li[id ="${numberToScroll}"]`));
+        const fullPath = $elem.data("fullPath");
+        $filesSelector.find("li.active-file").removeClass("active-file");
+        $elem.addClass("active-file");
+        const elemId = Number.parseInt($elem.attr("id"));
+        const idToScroll = elemId > 5 ? elemId - 4 : 1;
+        $filesSelector.mCustomScrollbar("scrollTo", $(`li[id ="${idToScroll}"]`));
         try {
             const otp = await app.get2FaFromFile(fullPath);
             $loginInput.val(app.maFile.account_name);
-            $passwordInput.val('');
+            $passwordInput.val("");
             renderOtp(otp);
         }
         catch (err) {
-            renderMessage(messages_1.Messages.missingFiles);
+            renderMessage("Some files were not available. Account list was refreshed");
             await updateFilesList();
         }
     }
     async function uploadFiles(files) {
-        const results = await AllSettled(files.map(file => app.saveToConfig(file.path)));
+        const results = await app.saveToConfig(files.map(file => file.path));
         let successfulFiles = 0;
         if (results.length === 1) {
             const [result] = results;
-            if (result.status === "rejected") {
-                const { message } = result.reason;
-                renderMessage(message);
+            if (result.status === "fulfilled") {
+                renderMessage("File was successfully saved");
+                await updateFilesList();
             }
             else {
-                renderMessage(messages_1.Messages.fileSaved);
-                await updateFilesList();
+                const { message } = result.reason;
+                renderMessage(message);
             }
         }
         else {
@@ -76,6 +77,9 @@ jQuery(async ($) => {
         }
     }
     async function updateFilesList() {
+        $filesSection
+            .css("opacity", 0)
+            .css("visibility", "hidden");
         $filesSelector.mCustomScrollbar("destroy").empty();
         const filesPaths = await app.getConfigFilesList();
         if (filesPaths.length !== 0) {
@@ -84,8 +88,13 @@ jQuery(async ($) => {
                 $filesSelector.append(`<li id="${i++}" data-full-path="${path_1.format(filePath)}">${filePath.base}</li>`);
             });
             $filesSelector.mCustomScrollbar(scrollBarOpts);
-            await toggleActiveFile($filesSelector.find('li:first-of-type'));
+            await toggleActiveFile($filesSelector.find("li:first-of-type"));
         }
+        setTimeout(() => {
+            $filesSection
+                .css("visibility", "visible")
+                .css("opacity", 1);
+        }, 425);
     }
     function renderOtp(otp) {
         $otp.fadeOut(125, () => $otp.text(otp)).fadeIn(125);
@@ -97,24 +106,24 @@ jQuery(async ($) => {
     }
     function switchSection($link) {
         toggleActiveMenu($link);
-        toggleActiveSection($link.attr('href'));
+        toggleActiveSection($link.attr("href"));
     }
     function toggleActiveMenu($elem) {
-        $('header > ul > li > a').removeClass('active');
-        $elem.addClass('active');
+        $('header > ul > li > a').removeClass("active");
+        $elem.addClass("active");
     }
     function toggleActiveSection(elem) {
         let $elem = $(elem);
-        let $sections = $('section');
-        $sections.removeClass('active visible');
-        $elem.addClass('active');
-        setTimeout(() => $elem.addClass('visible'), 20);
+        let $sections = $("section");
+        $sections.removeClass("active visible");
+        $elem.addClass("active");
+        setTimeout(() => $elem.addClass("visible"), 20);
     }
     (function updateOtp($progressBar) {
         setInterval(() => {
-            const time = Math.round(Date.now() / 1000) + app.steamTimeOffset;
+            const time = Date.timestamp() + app.steamTimeOffset;
             const count = time % 30;
-            $progressBar.css('width', `${Math.round(100 / 29 * count)}%`);
+            $progressBar.css("width", `${Math.round(100 / 29 * count)}%`);
             if (count === 1) {
                 (function reload() {
                     const otp = app.refresh2Fa();
@@ -129,66 +138,58 @@ jQuery(async ($) => {
     }($progressBar));
     await updateFilesList();
     $('#loader').fadeOut(700);
-    $body.on('dragenter', () => {
-        switchSection($('#nav li:nth-of-type(2) a'));
+    $body.on("dragenter", () => {
+        switchSection($("#nav li:nth-of-type(2) a"));
     });
     $dropZone
-        .on('dragover', function (event) {
+        .on("dragover", function (event) {
         event.preventDefault();
-        $dropZone.addClass('file-over');
+        $dropZone.addClass("file-over");
     })
-        .on('dragleave', function (event) {
+        .on("dragleave", function (event) {
         event.preventDefault();
-        $dropZone.removeClass('file-over');
+        $dropZone.removeClass("file-over");
     })
-        .on('drop', async function (event) {
+        .on("drop", async function (event) {
         event.preventDefault();
-        $dropZone.removeClass('file-over');
+        $dropZone.removeClass("file-over");
         const originalEvent = event.originalEvent;
         const files = Object.values(originalEvent.dataTransfer.files);
         await uploadFiles(files);
     });
-    $('#nav li a').on('click', function (event) {
+    $("#nav li a").on("click", function (event) {
         event.preventDefault();
         const $link = $(this);
-        if ($link.hasClass('active'))
+        if ($link.hasClass("active"))
             return false;
         switchSection($link);
     });
-    $body.on('click contextmenu dblclick', $body.not($('li.active-file')), () => {
-        $('#context-menu').css('visibility', 'hidden');
+    $body.on("click contextmenu dblclick", $body.not($("li.active-file")), () => {
+        $("#context-menu").css("visibility", "hidden");
     });
     $filesSelector
-        .on('click', 'li', async function () {
-        const $elem = $(this);
-        if (!$elem.hasClass('active-file'))
-            await toggleActiveFile($elem);
+        .on("click contextmenu", "li:not(.active-file)", async function () {
+        await toggleActiveFile($(this));
     })
-        .on('contextmenu', 'li', async function (event) {
-        const $elem = $(this);
-        if (!$elem.hasClass('active-file'))
-            await toggleActiveFile($elem);
-        showContextMenu(event);
-    })
-        .on('contextmenu', 'li.active-file', showContextMenu);
-    function showContextMenu(event) {
+        .on("click dblclick", "li.active-file", (event) => event.stopPropagation())
+        .on("contextmenu", "li.active-file", (event) => {
         event.stopPropagation();
         const clientX = event.clientX;
         const x = document.documentElement.clientWidth - clientX > 120 ? clientX : clientX - 180;
         const y = event.clientY;
-        const $contextMenu = $('#context-menu');
+        const $contextMenu = $("#context-menu");
         $contextMenu
-            .css('visibility', 'visible')
-            .css('top', `${y}px`)
-            .css('left', `${x}px`);
-    }
+            .css("visibility", "visible")
+            .css("top", `${y}px`)
+            .css("left", `${x}px`);
+    });
     $secret
         .on("keydown", function (event) {
         if (event.key === "Enter" && $secret.hasClass("valid")) {
             const secret = $(this).val();
             try {
                 const otp = app.get2FaFromSecret(secret);
-                $filesSelector.find('li.active-file').removeClass('active-file');
+                $filesSelector.find("li.active-file").removeClass("active-file");
                 renderOtp(otp);
             }
             catch (err) {
@@ -204,23 +205,27 @@ jQuery(async ($) => {
             $secret.removeClass("valid").addClass("invalid");
         }
     });
-    $('#trades').on('click', () => {
-        electron_1.ipcRenderer.send("open-trades", app.maFile);
-    });
-    $('#refresh-session').on('click', async () => {
+    $('#trades').on("click", () => electron_1.ipcRenderer.send("open-trades", app.maFile));
+    $('#refresh-session').on("click", async () => {
         try {
             await app.refreshSession();
-            renderMessage(messages_1.Messages.sesRefreshed);
+            renderMessage("Account session refreshed");
         }
         catch (err) {
             renderMessage(err.message);
         }
     });
-    $('#delete').on('click', async () => {
+    $("#delete").on("click", async () => {
         try {
-            const $activeFile = $('li.active-file');
             const fileName = await app.deleteFile();
-            const $newActive = $activeFile.attr('id') === "1" ? $activeFile.next() : $activeFile.prev();
+            renderMessage(messages_1.CompositeMessages.deletedFile(fileName));
+        }
+        catch (err) {
+            renderMessage(err.message);
+        }
+        finally {
+            const $activeFile = $("li.active-file");
+            const $newActive = $activeFile.attr("id") === "1" ? $activeFile.next() : $activeFile.prev();
             await $activeFile.animate({ height: "0", padding: "0" }, 300).promise();
             $activeFile.remove();
             await toggleActiveFile($newActive);
@@ -228,42 +233,37 @@ jQuery(async ($) => {
             $filesSelector.find("li").each(function () {
                 $(this).attr("id", id++);
             });
-            if ($filesSelector.find("li:last-of-type").attr('id') === '9') {
+            if (Number.parseInt($filesSelector.find("li:last-of-type").attr("id")) < 10) {
                 $filesSelector.mCustomScrollbar("destroy");
             }
-            renderMessage(messages_1.CompositeMessages.deletedFile(fileName));
-        }
-        catch (err) {
-            renderMessage(messages_1.Messages.unknownErr);
         }
     });
-    $('.auth-data').on('click', (event) => event.stopPropagation());
-    $('#login-again').on('click', () => $modalWrapper.fadeIn(400));
-    $modalWrapper.on('click', () => $modalWrapper.fadeOut(300));
-    $('#send').on('click', async () => {
+    $(".auth-data").on("click", (event) => event.stopPropagation());
+    $("#login").on("click", () => $modalWrapper.fadeIn(400));
+    $modalWrapper.on("click", () => $modalWrapper.fadeOut(300));
+    $("#send").on("click", async () => {
         const login = $loginInput.val();
         const password = $passwordInput.val();
         $modalWrapper.fadeOut(400);
         try {
             await app.login(login, password);
+            renderMessage("Login was successful");
         }
         catch (err) {
             renderMessage(err.message);
         }
     });
-    $otp.on('click', () => {
+    $otp.on("click", () => {
         const $wrapper = $otp.parent();
         const otp = $otp.text();
-        navigator.clipboard.writeText(otp);
-        $wrapper.removeClass('copied');
-        setTimeout(() => $wrapper.addClass('copied'), 20);
+        electron_1.clipboard.writeText(otp);
+        $wrapper.removeClass("copied");
+        setTimeout(() => $wrapper.addClass("copied"), 20);
     });
-    const $close = $('#close-btn');
-    const $minimize = $('#minimize-btn');
     $close
-        .on('mouseleave mouseup', () => $close.trigger('blur'))
-        .on('click', () => window.close());
+        .on("mouseleave mouseup", () => $close.trigger("blur"))
+        .on("click", () => window.close());
     $minimize
-        .on('mouseleave mouseup', () => $minimize.trigger('blur'))
-        .on('click', () => electron_1.ipcRenderer.send('main-minimize'));
+        .on("mouseleave mouseup", () => $minimize.trigger("blur"))
+        .on("click", () => electron_1.ipcRenderer.send("main-minimize"));
 });

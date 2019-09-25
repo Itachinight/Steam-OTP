@@ -4,30 +4,33 @@ const jQuery = require("jquery");
 const TradesController_1 = require("../controllers/TradesController");
 const electron_1 = require("electron");
 let app;
-try {
+jQuery(async ($) => {
     const maFile = electron_1.remote.getGlobal("sharedObject").maFile;
-    app = new TradesController_1.default(maFile);
-    jQuery(async ($) => {
-        const tradesPage = app.getTrades();
+    document.title += ` - ${maFile.account_name}`;
+    try {
+        app = new TradesController_1.default(maFile);
+        const tradesPage = await app.getTradesPage();
         const $body = $("body");
-        const parser = new DOMParser();
-        const tradesPageParsed = parser.parseFromString(await tradesPage, "text/html");
-        const confirmations = $("body > .responsive_page_frame", tradesPageParsed);
-        $body.append(confirmations);
-        $(".mobileconf_list_entry").on("click", async function () {
+        const confirmations = $("body > .responsive_page_frame", tradesPage);
+        $body
+            .append(confirmations)
+            .on("click", ".mobileconf_list_entry", async function () {
             const $elem = $(this);
-            const id = parseInt($elem.data('confid'));
-            const key = $elem.data('key');
-            console.log(id, key);
+            const id = Number.parseInt($elem.data("confid"));
+            const key = $elem.data("key");
             const html = await app.getTradeDetails(id);
             $("body > .responsive_page_frame").hide();
-            $("body").append(html, getMobileConfButtons(id, key));
+            $body.append(html, getMobileConfButtons(id, key));
         });
-    });
-}
-catch (err) {
-    document.write(err);
-    setTimeout(() => window.close(), 2000);
+    }
+    catch (err) {
+        console.error(err);
+        renderMessage(err.message);
+        window.close();
+    }
+});
+function renderMessage(msg) {
+    alert(msg);
 }
 function getMobileConfButtons(id, key) {
     return `<div id="mobileconf_buttons">
@@ -38,10 +41,10 @@ function getMobileConfButtons(id, key) {
             </div>`;
 }
 async function declineTrade(id, key) {
-    console.log(await app.handleTrade("cancel", id, key));
+    await app.handleTrade("cancel", id, key);
     document.location.reload();
 }
 async function confirmTrade(id, key) {
-    console.log(await app.handleTrade("allow", id, key));
+    await app.handleTrade("allow", id, key);
     document.location.reload();
 }

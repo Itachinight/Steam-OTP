@@ -1,14 +1,14 @@
 // Modules to control application life and create native browser window
 import {app, BrowserWindow, Tray, Menu, ipcMain} from 'electron';
 import {config} from "dotenv";
-
+import {resolve} from "path";
 config();
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-const icon: string = 'dist/static/favicon.ico';
-let mainWindow: BrowserWindow | null;
-let tray: Tray | null;
+const icon: string = resolve(__dirname, '..', 'favicon.ico');
+let mainWindow: BrowserWindow|null;
+let tray: Tray|null;
 
 async function createWindow() {
     // Create the browser window.
@@ -103,8 +103,6 @@ ipcMain.on("open-trades", async (event: any, args: any[]) => {
         resizable: true,
         frame: true,
         show: true,
-        modal: true,
-        parent: <BrowserWindow>mainWindow,
         webPreferences: {
             nodeIntegration: true
         }
