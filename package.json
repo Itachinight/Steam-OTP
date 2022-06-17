@@ -23,7 +23,7 @@
     "@types/mcustomscrollbar": "^2.8.32",
     "@types/node-fetch": "^2.5.0",
     "@types/promise.allsettled": "^1.0.1",
-    "electron": "^6.0.9",
+    "electron": "^15.5.5",
     "electron-packager": "^14.0.1"
   },
   "dependencies": {
